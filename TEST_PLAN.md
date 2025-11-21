@@ -31,10 +31,10 @@ Before testing, ensure:
 ## 2. 🔐 Authentication & Security
 *Goal: Ensure secure access and role management.*
 
-- [ ] **Sign Up**: Go to `/register`. Create a new account (e.g., `student@test.com`).
+- [x] **Sign Up**: Go to `/register`. Create a new account (e.g., `student@test.com`).
     -   Verify redirect to Login or Dashboard.
-- [ ] **Login**: Log out, then log back in.
-- [ ] **Forgot Password**: Go to `/forgot-password`. Enter email. (Note: Real email sending requires SMTP setup in Supabase, but check if UI feedback works).
+- [x] **Login**: Log out, then log back in.
+- [x] **Forgot Password**: Go to `/forgot-password`. Enter email. (Note: Real email sending requires SMTP setup in Supabase, but check if UI feedback works).
 - [ ] **Protected Routes**:
     -   Log out.
     -   Try to access `http://localhost:5173/dashboard`.
