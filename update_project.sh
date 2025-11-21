@@ -1,410 +1,288 @@
 #!/bin/bash
 
-echo "⚓ Fixing Footer Alignment (Sticky Footer)..."
+echo "🛠️ Fixing Gamification Crash..."
 
-# 1. UPDATE LANDING PAGE
-echo "🛠️ Updating LandingPage.jsx..."
-cat << 'EOF' > src/pages/LandingPage.jsx
-import Navbar from '../components/sections/Navbar'
-import Benefits from '../components/sections/Benefits'
-import Teachers from '../components/sections/Teachers'
-import Agenda from '../components/sections/Agenda'
-import Offer from '../components/sections/Offer'
-import Testimonials from '../components/sections/Testimonials'
-import Footer from '../components/sections/Footer'
-import WebinarForm from '../components/WebinarForm'
-import { useLanguage } from '../context/LanguageContext'
-
-export default function LandingPage() {
-  const { t } = useLanguage()
-  return (
-    <div className="min-h-screen bg-[#F8F9FC] font-sans text-gray-800 flex flex-col">
-      <Navbar />
-
-      <main className="flex-grow">
-        <section className="relative pt-32 pb-20 px-4 overflow-hidden">
-          <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
-            
-            <div className="space-y-6 text-center lg:text-left">
-              <span className="inline-flex items-center gap-2 py-1 px-4 rounded-full bg-white shadow-sm text-brand-purple text-sm font-bold border border-purple-100">
-                <span>⭐⭐⭐⭐⭐</span> {t('hero_students')}
-              </span>
-              
-              <h1 className="text-4xl md:text-6xl font-extrabold text-brand-dark leading-tight">
-                {t('hero_title')} <br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-purple">
-                  {t('hero_subtitle')}
-                </span>
-              </h1>
-              
-              <p className="text-lg text-gray-600 max-w-xl mx-auto lg:mx-0">
-                {t('hero_desc')}
-              </p>
-
-              <div className="flex flex-wrap justify-center lg:justify-start gap-4 pt-4">
-                <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  {t('hero_spots')}
-                </div>
-                <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
-                  <span>📹</span> {t('hero_live')}
-                </div>
-              </div>
-            </div>
-
-            <div className="relative" id="registration">
-              <div className="absolute -inset-4 bg-gradient-to-r from-brand-blue to-brand-purple rounded-[2rem] opacity-30 blur-2xl"></div>
-              <WebinarForm />
-            </div>
-          </div>
-
-          <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-gradient-to-b from-purple-200 to-blue-200 opacity-20 blur-[100px] rounded-full pointer-events-none -z-10"></div>
-        </section>
-
-        <div className="py-8 border-y border-gray-200 bg-white/50 backdrop-blur text-center">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">{t('hero_powered')}</p>
-          <div className="flex flex-wrap justify-center gap-8 md:gap-16 text-gray-400 font-bold text-sm">
-            <span>📹 ZOOM HD</span>
-            <span>🤖 AI LIVE TRANSLATE</span>
-            <span>🎧 AUDIO STUDIO</span>
-            <span>💬 INTERACTIVE CHAT</span>
-          </div>
-        </div>
-
-        <Benefits />
-        <Teachers />
-        <Agenda />
-        <Offer />
-        <Testimonials />
-      </main>
-      
-      <Footer />
-    </div>
-  )
-}
-EOF
-
-# 2. UPDATE ABOUT PAGE
-echo "🛠️ Updating About.jsx..."
-cat << 'EOF' > src/pages/About.jsx
-import Navbar from '../components/sections/Navbar'
-import Footer from '../components/sections/Footer'
-import { useLanguage } from '../context/LanguageContext'
-
-export default function About() {
-  const { t } = useLanguage()
-  return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
-      <Navbar />
-      <main className="flex-grow pt-32 pb-20 px-4">
-        <div className="max-w-4xl mx-auto text-center mb-16">
-          <h1 className="text-4xl font-bold text-brand-dark mb-6">{t('about_title')}</h1>
-          <p className="text-xl text-gray-600">
-            {t('about_subtitle')}
-          </p>
-        </div>
-
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-          <img src="https://placehold.co/600x400/6a11cb/ffffff?text=Team+Annyeong" className="rounded-3xl shadow-xl" alt="Team" />
-          <div className="space-y-6 text-gray-700">
-            <h2 className="text-2xl font-bold text-brand-purple">{t('about_who_title')}</h2>
-            <p>{t('about_who_p1')}</p>
-            <p>{t('about_who_p2')}</p>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  )
-}
-EOF
-
-# 3. UPDATE CONTACT PAGE
-echo "🛠️ Updating Contact.jsx..."
-cat << 'EOF' > src/pages/Contact.jsx
-import { useState } from 'react'
-import Navbar from '../components/sections/Navbar'
-import Footer from '../components/sections/Footer'
-import { Mail, Phone, Loader2 } from 'lucide-react'
+# 1. Fix useGamification Hook (Add Default Values & Error Handling)
+cat << 'EOF' > src/hooks/useGamification.jsx
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { useLanguage } from '../context/LanguageContext'
+import { useAuth } from '../context/AuthContext'
 
-export default function Contact() {
-  const { t } = useLanguage()
-  const [sent, setSent] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' })
+export function useGamification() {
+  const { user } = useAuth()
+  // Initialize with SAFE default values to prevent crashes
+  const [stats, setStats] = useState({ xp: 0, streak: 0, last_activity: null })
+  const [loading, setLoading] = useState(true)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+  useEffect(() => {
+    if (user) fetchStats()
+  }, [user])
+
+  const fetchStats = async () => {
     try {
-      await supabase.from('contact_messages').insert([formData])
-      setSent(true)
-    } catch (error) {
-      alert("Error sending message")
+      let { data, error } = await supabase.from('user_stats').select('*').eq('user_id', user.id).single()
+      
+      // If row doesn't exist (new user), create it safely
+      if (!data && !error) { 
+         // This block catches the case where query succeeds but returns no rows (if single() wasn't strict)
+         // But .single() usually throws error if no rows. 
+      }
+
+      if (error) {
+        // If row not found (PGRST116), try to create it
+        if (error.code === 'PGRST116') {
+           const { data: newData, error: insertError } = await supabase
+             .from('user_stats')
+             .insert([{ user_id: user.id, xp: 0, streak: 0 }])
+             .select()
+             .single()
+           
+           if (!insertError && newData) {
+             data = newData
+           } else {
+             console.error("Failed to init user stats:", insertError)
+           }
+        } else {
+           console.error("Gamification fetch error:", error)
+        }
+      }
+      
+      if (data) {
+        setStats(data)
+        checkStreak(data)
+      }
+    } catch (e) {
+      console.error("Gamification unexpected error:", e)
     } finally {
       setLoading(false)
     }
   }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
-      <Navbar />
-      <main className="flex-grow pt-32 pb-20 px-4">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
-          
-          <div>
-            <h1 className="text-4xl font-bold text-brand-dark mb-6">{t('contact_title')}</h1>
-            <p className="text-gray-600 mb-8">{t('contact_desc')}</p>
-            
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-brand-purple"><Mail /></div>
-                <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-bold text-brand-dark">info@annyeong-academy.com</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-brand-blue"><Phone /></div>
-                <div>
-                  <p className="text-sm text-gray-500">Phone</p>
-                  <p className="font-bold text-brand-dark">+36 30 123 4567</p>
-                </div>
-              </div>
-            </div>
-          </div>
+  const checkStreak = async (currentStats) => {
+    if (!currentStats) return
 
-          <div className="bg-white p-8 rounded-3xl shadow-lg">
-            {sent ? (
-              <div className="text-center py-12">
-                <div className="text-5xl mb-4">✅</div>
-                <h3 className="text-xl font-bold text-brand-dark">{t('contact_sent')}</h3>
-                <p className="text-gray-500">{t('contact_reply')}</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('contact_name')}</label>
-                  <input 
-                    required 
-                    type="text" 
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none"
-                    value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth_email')}</label>
-                  <input 
-                    required 
-                    type="email" 
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none"
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('contact_msg')}</label>
-                  <textarea 
-                    required 
-                    rows="4" 
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none"
-                    value={formData.message}
-                    onChange={e => setFormData({...formData, message: e.target.value})}
-                  ></textarea>
-                </div>
-                <button 
-                  disabled={loading}
-                  type="submit" 
-                  className="w-full bg-brand-dark text-white font-bold py-3 rounded-xl hover:opacity-90 transition flex justify-center"
-                >
-                  {loading ? <Loader2 className="animate-spin" /> : t('btn_send')}
-                </button>
-              </form>
-            )}
-          </div>
+    const today = new Date().toISOString().split('T')[0]
+    const last = currentStats.last_activity
+    
+    // If already logged today, do nothing
+    if (last === today) return
 
-        </div>
-      </main>
-      <Footer />
-    </div>
-  )
-}
-EOF
+    let newStreak = currentStats.streak || 0
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
 
-# 4. UPDATE FAQ PAGE
-echo "🛠️ Updating FAQ.jsx..."
-cat << 'EOF' > src/pages/FAQ.jsx
-import Navbar from '../components/sections/Navbar'
-import Footer from '../components/sections/Footer'
-import { useLanguage } from '../context/LanguageContext'
-
-export default function FAQ() {
-  const { t } = useLanguage()
-  const faqs = [1, 2, 3, 4, 5]
-
-  return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
-      <Navbar />
-      <main className="flex-grow pt-32 pb-20 px-4">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold text-brand-dark mb-6 text-center">{t('faq_title')}</h1>
-          <p className="text-center text-gray-600 mb-12">
-            {t('faq_desc')}
-          </p>
-
-          <div className="space-y-4">
-            {faqs.map((i) => (
-              <details key={i} className="group bg-white p-6 rounded-2xl shadow-sm cursor-pointer open:ring-2 open:ring-brand-purple/20 transition">
-                <summary className="font-bold text-lg text-brand-dark list-none flex justify-between items-center">
-                  {t(`faq_${i}_q`)}
-                  <span className="text-brand-purple group-open:rotate-180 transition text-2xl">▼</span>
-                </summary>
-                <p className="text-gray-600 mt-4 leading-relaxed">
-                  {t(`faq_${i}_a`)}
-                </p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  )
-}
-EOF
-
-# 5. UPDATE TUTORS PAGE
-echo "🛠️ Updating Tutors.jsx..."
-cat << 'EOF' > src/pages/Tutors.jsx
-import Navbar from '../components/sections/Navbar'
-import Footer from '../components/sections/Footer'
-import { useLanguage } from '../context/LanguageContext'
-
-export default function Tutors() {
-  const { t } = useLanguage()
-  const tutors = [
-    {
-      id: 1,
-      name: "Kim Seon-saeng-nim",
-      role: t('tutor_1_role'),
-      image: "https://placehold.co/300x300/6a11cb/ffffff?text=Kim",
-      bio: t('tutor_1_bio'),
-      specialties: ["Basic Grammar", "Korean Culture", "K-Pop"]
-    },
-    {
-      id: 2,
-      name: "Lee Seon-saeng-nim",
-      role: t('tutor_2_role'),
-      image: "https://placehold.co/300x300/2575fc/ffffff?text=Lee",
-      bio: t('tutor_2_bio'),
-      specialties: ["Speaking", "Acting", "Slang"]
-    },
-    {
-      id: 3,
-      name: "Park Seon-saeng-nim",
-      role: t('tutor_3_role'),
-      image: "https://placehold.co/300x300/ff9900/ffffff?text=Park",
-      bio: t('tutor_3_bio'),
-      specialties: ["TOPIK I & II", "Formal Writing", "Business Korean"]
+    if (last === yesterdayStr) {
+      newStreak += 1
+    } else {
+      newStreak = 1
     }
-  ]
+
+    // Update DB
+    const { error } = await supabase.from('user_stats').update({ 
+      streak: newStreak, 
+      last_activity: today 
+    }).eq('user_id', user.id)
+
+    if (!error) setStats(prev => ({ ...prev, streak: newStreak, last_activity: today }))
+  }
+
+  const addXP = async (amount) => {
+    const newXP = (stats.xp || 0) + amount
+    setStats(prev => ({ ...prev, xp: newXP }))
+    await supabase.from('user_stats').update({ xp: newXP }).eq('user_id', user.id)
+  }
+
+  return { stats, addXP, loading }
+}
+EOF
+
+# 2. Fix Dashboard to handle loading cleanly
+cat << 'EOF' > src/pages/app/Dashboard.jsx
+import { useEffect, useState } from 'react'
+import { useAuth } from '../../context/AuthContext'
+import { supabase } from '../../lib/supabase'
+import { useGamification } from '../../hooks/useGamification'
+import { useLanguage } from '../../context/LanguageContext'
+import { Link } from 'react-router-dom'
+import { BookOpen, Loader2, PlayCircle, Calendar, Download, ArrowRight, Award, Zap, Flame } from 'lucide-react'
+
+export default function Dashboard() {
+  const { user, profile } = useAuth()
+  const { t } = useLanguage()
+  
+  // Destructure safely with default fallback
+  const { stats = { xp: 0, streak: 0 }, loading: gameLoading } = useGamification()
+  
+  const [loading, setLoading] = useState(true)
+  const [courses, setCourses] = useState([])
+  const [liveLessons, setLiveLessons] = useState([])
+  const [ebooks, setEbooks] = useState([])
+  const [progressMap, setProgressMap] = useState({})
+
+  useEffect(() => { if (user) fetchData() }, [user])
+
+  const fetchData = async () => {
+    try {
+      const { data: purchases } = await supabase.from('purchases').select('product_id').eq('user_id', user.id).eq('status', 'completed')
+      if (purchases && purchases.length > 0) {
+        const ids = purchases.map(p => p.product_id)
+        const { data: products } = await supabase.from('products').select('*').in('id', ids)
+        if (products) {
+          const myCourses = products.filter(p => p.type === 'course')
+          setCourses(myCourses)
+          setLiveLessons(products.filter(p => p.type === 'standalone'))
+          setEbooks(products.filter(p => p.type === 'ebook'))
+
+          // Calculate Progress
+          const progressData = {}
+          const { data: userProgress } = await supabase.from('lesson_progress').select('course_id').eq('user_id', user.id)
+          const { data: allLessons } = await supabase.from('lessons').select('course_id').in('course_id', myCourses.map(c => c.id))
+
+          myCourses.forEach(course => {
+             const total = allLessons.filter(l => l.course_id === course.id).length
+             const completed = userProgress.filter(p => p.course_id === course.id).length
+             progressData[course.id] = total > 0 ? Math.round((completed / total) * 100) : 0
+          })
+          setProgressMap(progressData)
+        }
+      }
+    } catch (error) { console.error(error) } 
+    finally { setLoading(false) }
+  }
+
+  // Combine loading states
+  if (loading || gameLoading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple" /></div>
+
+  const displayName = profile?.full_name ? profile.full_name.split(' ')[0] : user?.email?.split('@')[0]
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
-      <Navbar />
-      <main className="flex-grow pt-32 pb-20 px-4">
-        <div className="max-w-4xl mx-auto text-center mb-16">
-          <h1 className="text-4xl font-bold text-brand-dark mb-6">{t('tutors_title')}</h1>
-          <p className="text-xl text-gray-600">
-            {t('tutors_desc')}
-          </p>
+    <div className="pb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-brand-dark mb-1">{t('dash_hello')}, {displayName}! 👋</h1>
+          <p className="text-gray-500">{t('dash_ready')}</p>
+        </div>
+        
+        {/* Gamification Stats Header */}
+        <div className="flex gap-4">
+           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
+              <div className="bg-orange-100 p-1.5 rounded-lg"><Flame size={20} className="text-orange-500 fill-orange-500"/></div>
+              <div>
+                 <p className="text-xs text-gray-400 font-bold uppercase">{t('dash_streak')}</p>
+                 <p className="font-bold text-brand-dark">{stats?.streak || 0} {t('dash_days')}</p>
+              </div>
+           </div>
+           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
+              <div className="bg-yellow-100 p-1.5 rounded-lg"><Zap size={20} className="text-yellow-500 fill-yellow-500"/></div>
+              <div>
+                 <p className="text-xs text-gray-400 font-bold uppercase">{t('dash_xp')}</p>
+                 <p className="font-bold text-brand-dark">{stats?.xp || 0} XP</p>
+              </div>
+           </div>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 hover:shadow-md transition">
+          <div className="flex justify-between items-start">
+            <div><p className="text-gray-500 text-xs font-bold uppercase tracking-wider">{t('dash_my_courses')}</p><p className="text-3xl font-bold text-brand-purple mt-1">{courses.length}</p></div>
+            <div className="bg-purple-50 p-2 rounded-lg text-brand-purple"><BookOpen size={20}/></div>
+          </div>
+          <Link to="/corsi" className="text-xs font-bold text-gray-400 hover:text-brand-purple flex items-center gap-1 transition">{t('dash_view_catalog')} <ArrowRight size={12}/></Link>
+        </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 hover:shadow-md transition">
+          <div className="flex justify-between items-start">
+            <div><p className="text-gray-500 text-xs font-bold uppercase tracking-wider">{t('dash_live_credits')}</p><p className="text-3xl font-bold text-brand-blue mt-1">{liveLessons.length}</p></div>
+            <div className="bg-blue-50 p-2 rounded-lg text-brand-blue"><Calendar size={20}/></div>
+          </div>
+          <Link to="/lezioni-live" className="text-xs font-bold text-gray-400 hover:text-brand-blue flex items-center gap-1 transition">{t('dash_book_new')} <ArrowRight size={12}/></Link>
+        </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 hover:shadow-md transition">
+          <div className="flex justify-between items-start">
+            <div><p className="text-gray-500 text-xs font-bold uppercase tracking-wider">{t('dash_files')}</p><p className="text-3xl font-bold text-gray-700 mt-1">{ebooks.length}</p></div>
+            <div className="bg-gray-50 p-2 rounded-lg text-gray-600"><Download size={20}/></div>
+          </div>
+          <Link to="/downloads" className="text-xs font-bold text-gray-400 hover:text-gray-600 flex items-center gap-1 transition">{t('dash_go_files')} <ArrowRight size={12}/></Link>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <h2 className="text-xl font-bold text-brand-dark">{t('dash_my_courses')}</h2>
+          {courses.length > 0 ? (
+            <div className="space-y-4">
+              {courses.map(course => {
+                const progress = progressMap[course.id] || 0
+                return (
+                  <div key={course.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group">
+                    <div className="flex items-start gap-4">
+                      <div className="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
+                         <img src={course.image_url || 'https://placehold.co/150'} alt={course.title} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0 py-1">
+                        <div className="flex justify-between items-start">
+                           <h3 className="font-bold text-brand-dark text-lg truncate pr-2">{course.title}</h3>
+                           <Link to={`/corsi/${course.id}`} className="bg-brand-purple text-white p-2 rounded-full shadow-md hover:scale-110 transition transform"><PlayCircle size={20} fill="white" className="text-brand-purple" /></Link>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">{course.description.replace(/\[\[.*?\]\]/g, '')}</p>
+                        <div className="mt-4">
+                           <div className="flex justify-between text-xs font-bold mb-1"><span className={progress === 100 ? "text-green-600" : "text-gray-400"}>{progress === 100 ? "Completed! 🏆" : `${progress}% Complete`}</span></div>
+                           <div className="w-full bg-gray-100 rounded-full h-2"><div className={`h-2 rounded-full transition-all duration-1000 ${progress === 100 ? 'bg-green-500' : 'bg-brand-purple'}`} style={{ width: `${progress}%` }}></div></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-gray-300">
+              <p className="text-gray-500 mb-4">{t('dash_no_courses')}</p>
+              <Link to="/corsi" className="inline-block bg-brand-purple text-white px-6 py-2 rounded-full font-bold text-sm hover:shadow-lg transition">{t('dash_start_now')}</Link>
+            </div>
+          )}
         </div>
 
-        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
-          {tutors.map(tutor => (
-            <div key={tutor.id} className="bg-white rounded-3xl overflow-hidden shadow-lg hover:-translate-y-2 transition duration-300">
-              <div className="h-64 overflow-hidden bg-gray-100">
-                <img src={tutor.image} alt={tutor.name} className="w-full h-full object-cover" />
+        <div className="space-y-8">
+           <div className="bg-gradient-to-br from-brand-dark to-gray-900 rounded-2xl p-6 text-white relative overflow-hidden">
+              <div className="relative z-10">
+                 <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-white/20 p-2 rounded-lg"><Award size={20}/></div>
+                    <h3 className="font-bold">{t('dash_league')}</h3>
+                 </div>
+                 <p className="text-gray-300 text-sm mb-4">Silver League. Keep pushing!</p>
+                 <div className="w-full bg-white/10 rounded-full h-2"><div className="bg-yellow-400 h-2 rounded-full" style={{width: '60%'}}></div></div>
               </div>
-              <div className="p-8">
-                <h3 className="text-2xl font-bold text-brand-dark mb-1">{tutor.name}</h3>
-                <p className="text-brand-purple font-bold text-sm uppercase tracking-wider mb-4">{tutor.role}</p>
-                <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                  {tutor.bio}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {tutor.specialties.map(tag => (
-                    <span key={tag} className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">
-                      #{tag}
-                    </span>
+              <div className="absolute -bottom-4 -right-4 text-white/5"><Award size={120}/></div>
+           </div>
+
+           <div>
+             <h2 className="text-xl font-bold text-brand-dark mb-4">{t('dash_upcoming')}</h2>
+             {liveLessons.length > 0 ? (
+                <div className="space-y-3">
+                  {liveLessons.slice(0, 2).map(lesson => (
+                    <div key={lesson.id} className="bg-white p-4 rounded-xl border border-gray-100 flex gap-3 items-center">
+                      <div className="bg-orange-50 text-orange-500 p-3 rounded-lg h-fit"><Calendar size={18}/></div>
+                      <div>
+                        <h4 className="font-bold text-sm text-gray-800 line-clamp-1">{lesson.title}</h4>
+                        <a href="https://zoom.us/join" target="_blank" className="text-xs text-brand-blue font-bold hover:underline mt-1 block">{t('dash_join')}</a>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
-            </div>
-          ))}
+             ) : (
+                <div className="bg-gray-50 rounded-xl p-6 text-center">
+                    <p className="text-sm text-gray-400 italic mb-2">{t('dash_no_live')}</p>
+                    <Link to="/lezioni-live" className="text-xs font-bold text-brand-blue underline">{t('dash_book_new')}</Link>
+                </div>
+             )}
+           </div>
         </div>
-      </main>
-      <Footer />
+      </div>
     </div>
   )
 }
 EOF
 
-# 6. UPDATE PRIVACY PAGE
-echo "🛠️ Updating PrivacyPage.jsx..."
-cat << 'EOF' > src/pages/PrivacyPage.jsx
-import Navbar from '../components/sections/Navbar'
-import Footer from '../components/sections/Footer'
-import { useLanguage } from '../context/LanguageContext'
-
-export default function PrivacyPage() {
-  const { t } = useLanguage()
-  return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
-      <Navbar />
-      <main className="flex-grow pt-32 pb-20 px-4">
-        <div className="max-w-3xl mx-auto bg-white p-8 md:p-12 rounded-3xl shadow-sm border border-gray-100">
-          <h1 className="text-3xl font-bold text-brand-dark mb-8">{t('privacy_title')}</h1>
-          <div className="prose prose-gray text-gray-600 leading-relaxed">
-            <p className="mb-4"><strong>Last updated:</strong> November 21, 2025</p>
-            <p>We value your privacy and are committed to protecting your personal data.</p>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  )
-}
-EOF
-
-# 7. UPDATE TERMS PAGE
-echo "🛠️ Updating TermsPage.jsx..."
-cat << 'EOF' > src/pages/TermsPage.jsx
-import Navbar from '../components/sections/Navbar'
-import Footer from '../components/sections/Footer'
-import { useLanguage } from '../context/LanguageContext'
-
-export default function TermsPage() {
-  const { t } = useLanguage()
-  return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
-      <Navbar />
-      <main className="flex-grow pt-32 pb-20 px-4">
-        <div className="max-w-3xl mx-auto bg-white p-8 md:p-12 rounded-3xl shadow-sm border border-gray-100">
-          <h1 className="text-3xl font-bold text-brand-dark mb-8">{t('terms_title')}</h1>
-          <div className="prose prose-gray text-gray-600 leading-relaxed">
-            <p className="mb-4">Welcome to Annyeong Academy.</p>
-            <p>Use of this site constitutes acceptance of our terms.</p>
-          </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  )
-}
-EOF
-
-echo "✅ Footer layout fixed on all public pages!"
+echo "✅ Gamification crash fixed!"

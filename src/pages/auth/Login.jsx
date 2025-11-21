@@ -16,7 +16,8 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
-    const { data, error } = await signIn({ email, password })
+    // FIX: Trim email
+    const { data, error } = await signIn({ email: email.trim(), password })
     
     if (error) {
       alert("Login error: " + error.message)

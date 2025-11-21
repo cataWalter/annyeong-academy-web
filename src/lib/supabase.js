@@ -5,12 +5,18 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 const isConfigured = supabaseUrl && supabaseAnonKey && supabaseUrl !== 'INSERISCI_QUI_URL_SUPABASE'
 
+if (isConfigured) {
+  console.log("✅ Supabase Client Initialized with URL:", supabaseUrl)
+} else {
+  console.warn("⚠️ Supabase NOT configured. Using Mock Client.")
+}
+
 export const supabase = isConfigured 
   ? createClient(supabaseUrl, supabaseAnonKey)
   : {
       from: () => ({
         select: () => ({ data: [], error: null }),
-        insert: () => ({ error: null }), // Return success for mocks
+        insert: () => ({ error: null }),
         update: () => ({ error: null }),
         delete: () => ({ error: null }),
         upload: () => ({ error: { message: "Supabase not configured" } }),
@@ -25,7 +31,6 @@ export const supabase = isConfigured
       auth: {
         getSession: async () => ({ data: { session: null } }),
         getUser: async () => ({ data: { user: null } }),
-        // CRITICAL FIX: Immediately execute the callback to stop loading state
         onAuthStateChange: (callback) => {
           callback('SIGNED_OUT', null) 
           return { data: { subscription: { unsubscribe: () => {} } } }

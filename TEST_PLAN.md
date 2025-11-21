@@ -24,7 +24,7 @@ Before testing, ensure:
     -   Check "GDPR" and submit -> Verify Success Message ("Registration Confirmed").
     -   **Database Check**: Go to Supabase -> `webinar_leads` table. Ensure the row exists.
 - [x] **Navigation**: Click links in Navbar (About, Teachers, Contact). Ensure pages load.
-- [ ] **Contact Form**: Go to `/contact`. Send a message. Verify success UI.
+- [x] **Contact Form**: Go to `/contact`. Send a message. Verify success UI.
 
 ---
 

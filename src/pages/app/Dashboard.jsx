@@ -9,9 +9,11 @@ import { BookOpen, Loader2, PlayCircle, Calendar, Download, ArrowRight, Award, Z
 export default function Dashboard() {
   const { user, profile } = useAuth()
   const { t } = useLanguage()
-  const { stats } = useGamification()
-  const [loading, setLoading] = useState(true)
   
+  // Destructure safely with default fallback
+  const { stats = { xp: 0, streak: 0 }, loading: gameLoading } = useGamification()
+  
+  const [loading, setLoading] = useState(true)
   const [courses, setCourses] = useState([])
   const [liveLessons, setLiveLessons] = useState([])
   const [ebooks, setEbooks] = useState([])
@@ -48,7 +50,8 @@ export default function Dashboard() {
     finally { setLoading(false) }
   }
 
-  if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple" /></div>
+  // Combine loading states
+  if (loading || gameLoading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple" /></div>
 
   const displayName = profile?.full_name ? profile.full_name.split(' ')[0] : user?.email?.split('@')[0]
 
@@ -66,14 +69,14 @@ export default function Dashboard() {
               <div className="bg-orange-100 p-1.5 rounded-lg"><Flame size={20} className="text-orange-500 fill-orange-500"/></div>
               <div>
                  <p className="text-xs text-gray-400 font-bold uppercase">{t('dash_streak')}</p>
-                 <p className="font-bold text-brand-dark">{stats.streak} {t('dash_days')}</p>
+                 <p className="font-bold text-brand-dark">{stats?.streak || 0} {t('dash_days')}</p>
               </div>
            </div>
            <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
               <div className="bg-yellow-100 p-1.5 rounded-lg"><Zap size={20} className="text-yellow-500 fill-yellow-500"/></div>
               <div>
                  <p className="text-xs text-gray-400 font-bold uppercase">{t('dash_xp')}</p>
-                 <p className="font-bold text-brand-dark">{stats.xp} XP</p>
+                 <p className="font-bold text-brand-dark">{stats?.xp || 0} XP</p>
               </div>
            </div>
         </div>

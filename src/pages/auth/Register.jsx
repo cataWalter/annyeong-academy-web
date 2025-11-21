@@ -17,24 +17,40 @@ export default function Register() {
     e.preventDefault()
     setLoading(true)
     
-    // Pass metadata options so the SQL trigger can populate the 'profiles' table
-    const { error } = await signUp({ 
-      email: formData.email, 
-      password: formData.password,
-      options: {
-        data: {
-          full_name: formData.fullName,
-          avatar_url: ""
-        }
-      }
-    })
+    const email = formData.email.trim()
+    const fullName = formData.fullName.trim()
+    const password = formData.password
 
-    if (error) {
-      alert("Registration error: " + error.message)
-    } else {
-      alert("Registration successful! Please check your email to confirm your account.")
-      navigate('/login')
+    console.log("🚀 Attempting Registration...")
+    console.log("Email:", email)
+    console.log("Password Length:", password.length)
+    console.log("Full Name:", fullName)
+
+    try {
+      const { data, error } = await signUp({ 
+        email: email, 
+        password: password,
+        options: {
+          data: {
+            full_name: fullName,
+            avatar_url: ""
+          }
+        }
+      })
+
+      if (error) {
+        console.error("❌ Registration Failed:", error)
+        alert("Registration error: " + error.message)
+      } else {
+        console.log("✅ Registration Success:", data)
+        alert("Registration successful! Please check your email to confirm your account.")
+        navigate('/login')
+      }
+    } catch (err) {
+      console.error("🔥 Unexpected Error:", err)
+      alert("An unexpected error occurred.")
     }
+    
     setLoading(false)
   }
 

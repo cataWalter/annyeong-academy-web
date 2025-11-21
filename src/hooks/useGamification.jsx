@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 
 export function useGamification() {
   const { user } = useAuth()
+  // Initialize with SAFE default values to prevent crashes
   const [stats, setStats] = useState({ xp: 0, streak: 0, last_activity: null })
   const [loading, setLoading] = useState(true)
 
@@ -15,16 +16,37 @@ export function useGamification() {
     try {
       let { data, error } = await supabase.from('user_stats').select('*').eq('user_id', user.id).single()
       
-      // If row doesn't exist (old users), create it
-      if (!data) {
-        const { data: newData } = await supabase.from('user_stats').insert([{ user_id: user.id }]).select().single()
-        data = newData
+      // If row doesn't exist (new user), create it safely
+      if (!data && !error) { 
+         // This block catches the case where query succeeds but returns no rows (if single() wasn't strict)
+         // But .single() usually throws error if no rows. 
+      }
+
+      if (error) {
+        // If row not found (PGRST116), try to create it
+        if (error.code === 'PGRST116') {
+           const { data: newData, error: insertError } = await supabase
+             .from('user_stats')
+             .insert([{ user_id: user.id, xp: 0, streak: 0 }])
+             .select()
+             .single()
+           
+           if (!insertError && newData) {
+             data = newData
+           } else {
+             console.error("Failed to init user stats:", insertError)
+           }
+        } else {
+           console.error("Gamification fetch error:", error)
+        }
       }
       
-      setStats(data)
-      checkStreak(data)
+      if (data) {
+        setStats(data)
+        checkStreak(data)
+      }
     } catch (e) {
-      console.error("Gamification fetch error:", e)
+      console.error("Gamification unexpected error:", e)
     } finally {
       setLoading(false)
     }
@@ -39,16 +61,14 @@ export function useGamification() {
     // If already logged today, do nothing
     if (last === today) return
 
-    let newStreak = currentStats.streak
+    let newStreak = currentStats.streak || 0
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayStr = yesterday.toISOString().split('T')[0]
 
     if (last === yesterdayStr) {
-      // Continued streak
       newStreak += 1
     } else {
-      // Broken streak (or first day)
       newStreak = 1
     }
 
@@ -62,7 +82,7 @@ export function useGamification() {
   }
 
   const addXP = async (amount) => {
-    const newXP = stats.xp + amount
+    const newXP = (stats.xp || 0) + amount
     setStats(prev => ({ ...prev, xp: newXP }))
     await supabase.from('user_stats').update({ xp: newXP }).eq('user_id', user.id)
   }
