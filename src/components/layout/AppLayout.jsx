@@ -1,6 +1,6 @@
 ﻿import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { LayoutDashboard, BookOpen, Calendar, LogOut, User, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Calendar, LogOut, User, ShieldCheck, ShoppingBag, Settings } from 'lucide-react'
 
 export default function AppLayout() {
   const { signOut, user } = useAuth()
@@ -17,7 +17,7 @@ export default function AppLayout() {
     return (
       <Link 
         to={to} 
-        className={\lex items-center gap-3 px-4 py-3 rounded-xl transition-all \\}
+        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive ? 'bg-brand-purple text-white shadow-md' : 'text-gray-600 hover:bg-purple-50'}`}
       >
         <Icon size={20} />
         <span className="font-medium">{label}</span>
@@ -39,8 +39,9 @@ export default function AppLayout() {
           <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavItem to="/corsi" icon={BookOpen} label="Tutti i Corsi" />
           <NavItem to="/lezioni-live" icon={Calendar} label="Lezioni Live" />
+          <NavItem to="/store" icon={ShoppingBag} label="Ebook & Store" />
+          <NavItem to="/profile" icon={Settings} label="Il mio Profilo" />
           
-          {/* Link Admin Simulato */}
           <div className="pt-4 mt-4 border-t border-gray-100">
              <p className="px-4 text-xs font-bold text-gray-400 uppercase mb-2">Admin Area</p>
              <NavItem to="/admin" icon={ShieldCheck} label="Gestione Corsi" />

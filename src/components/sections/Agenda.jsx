@@ -5,7 +5,7 @@ export default function Agenda() {
   const timeline = [
     { time: '18:00', title: 'Immersione Culturale (Intro)', desc: 'Conosci gli insegnanti, setup tecnologia e introduzione culturale.' },
     { time: '18:15', title: 'La Mini-Lezione (La Prova)', desc: 'Impariamo il primo dialogo reale. Testiamo la traduzione AI dal vivo.' },
-    { time: '18:45', title: 'Q&A e Regali Esclusivi', desc: 'Rispondiamo alle domande. Ogni partecipante riceve il PDF ''Survival Vocabulary''.' }
+    { time: '18:45', title: 'Q&A e Regali Esclusivi', desc: "Rispondiamo alle domande. Ogni partecipante riceve il PDF 'Survival Vocabulary'." }
   ]
 
   return (
@@ -35,23 +35,23 @@ export default function Agenda() {
             <details className="group bg-gray-50 p-4 rounded-xl cursor-pointer open:bg-purple-50 transition">
               <summary className="font-bold text-brand-dark list-none flex justify-between items-center">
                 Serve installare software?
-                <span className="text-brand-purple group-open:rotate-180 transition">â–¼</span>
+                <span className="text-brand-purple group-open:rotate-180 transition">▼</span>
               </summary>
               <p className="text-gray-600 mt-3 text-sm">No. Riceverai un link Zoom standard. Puoi aprirlo nel browser o nell'app.</p>
             </details>
             <details className="group bg-gray-50 p-4 rounded-xl cursor-pointer open:bg-purple-50 transition">
               <summary className="font-bold text-brand-dark list-none flex justify-between items-center">
                 Devo accendere la telecamera?
-                <span className="text-brand-purple group-open:rotate-180 transition">â–¼</span>
+                <span className="text-brand-purple group-open:rotate-180 transition">▼</span>
               </summary>
               <p className="text-gray-600 mt-3 text-sm">Assolutamente no. Puoi partecipare come spettatore con audio e video spenti.</p>
             </details>
             <details className="group bg-gray-50 p-4 rounded-xl cursor-pointer open:bg-purple-50 transition">
               <summary className="font-bold text-brand-dark list-none flex justify-between items-center">
                 Parto da zero, posso venire?
-                <span className="text-brand-purple group-open:rotate-180 transition">â–¼</span>
+                <span className="text-brand-purple group-open:rotate-180 transition">▼</span>
               </summary>
-              <p className="text-gray-600 mt-3 text-sm">SÃ¬! Questo evento Ã¨ progettato specificamente per chi non ha mai studiato coreano.</p>
+              <p className="text-gray-600 mt-3 text-sm">Sì! Questo evento è progettato specificamente per chi non ha mai studiato coreano.</p>
             </details>
           </div>
         </div>
