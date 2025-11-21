@@ -6,15 +6,15 @@ export default function WebinarForm() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    webinar_date: 'Dec 6',
+    full_name: "",
+    email: "",
+    webinar_date: "Dec 6",
     gdpr_consent: false
   })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.gdpr_consent) return alert('Devi accettare la privacy policy')
+    if (!formData.gdpr_consent) return alert("Devi accettare la privacy policy")
     
     setLoading(true)
     
@@ -25,6 +25,7 @@ export default function WebinarForm() {
     setLoading(false)
 
     if (error) {
+      // Usa doppi apici per evitare errori di escaping
       alert("Errore durante l'iscrizione: " + error.message)
     } else {
       setSuccess(true)
@@ -34,7 +35,7 @@ export default function WebinarForm() {
   if (success) {
     return (
       <div className="text-center p-8 bg-green-50 rounded-xl border border-green-200">
-        <h3 className="text-2xl font-bold text-green-700 mb-2">Iscrizione Confermata!</h3>
+        <h3 className="text-2xl font-bold text-green-700 mb-2">Iscrizione Confermata! ðŸŽ‰</h3>
         <p className="text-green-800">Controlla la tua email per il link di Zoom.</p>
       </div>
     )
@@ -95,7 +96,7 @@ export default function WebinarForm() {
         type="submit" 
         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 rounded-full hover:opacity-90 disabled:opacity-50 flex justify-center items-center"
       >
-        {loading ? <Loader2 className="animate-spin mr-2" /> : 'Prenota il mio posto GRATIS'}
+        {loading ? <Loader2 className="animate-spin mr-2" /> : "Prenota il mio posto GRATIS"}
       </button>
     </form>
   )
