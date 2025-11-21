@@ -25,9 +25,9 @@ export default function Contact() {
   }
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
       <Navbar />
-      <div className="pt-32 pb-20 px-4 bg-[#F8F9FC]">
+      <main className="flex-grow pt-32 pb-20 px-4">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
           
           <div>
@@ -103,8 +103,8 @@ export default function Contact() {
           </div>
 
         </div>
-      </div>
+      </main>
       <Footer />
-    </>
+    </div>
   )
 }

@@ -17,13 +17,13 @@ Before testing, ensure:
 *Goal: Ensure new users can land, read, and register.*
 
 - [x] **Landing Page Load**: Open `http://localhost:5173/`. Ensure no white screen (AdBlocker check).
-- [ ] **Localization**: Click "HU" in the navbar. Verify text changes to Hungarian. Click "EN" to revert.
-- [ ] **Webinar Registration**:
+- [x] **Localization**: Click "HU" in the navbar. Verify text changes to Hungarian. Click "EN" to revert.
+- [x] **Webinar Registration**:
     -   Fill out the form at the top.
     -   Leave "GDPR" unchecked -> Verify error message.
     -   Check "GDPR" and submit -> Verify Success Message ("Registration Confirmed").
     -   **Database Check**: Go to Supabase -> `webinar_leads` table. Ensure the row exists.
-- [ ] **Navigation**: Click links in Navbar (About, Teachers, Contact). Ensure pages load.
+- [x] **Navigation**: Click links in Navbar (About, Teachers, Contact). Ensure pages load.
 - [ ] **Contact Form**: Go to `/contact`. Send a message. Verify success UI.
 
 ---

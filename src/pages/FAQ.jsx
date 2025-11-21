@@ -7,9 +7,9 @@ export default function FAQ() {
   const faqs = [1, 2, 3, 4, 5]
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
       <Navbar />
-      <div className="pt-32 pb-20 px-4 bg-[#F8F9FC] min-h-screen">
+      <main className="flex-grow pt-32 pb-20 px-4">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-bold text-brand-dark mb-6 text-center">{t('faq_title')}</h1>
           <p className="text-center text-gray-600 mb-12">
@@ -30,8 +30,8 @@ export default function FAQ() {
             ))}
           </div>
         </div>
-      </div>
+      </main>
       <Footer />
-    </>
+    </div>
   )
 }
