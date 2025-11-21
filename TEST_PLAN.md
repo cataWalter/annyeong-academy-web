@@ -35,7 +35,7 @@ Before testing, ensure:
     -   Verify redirect to Login or Dashboard.
 - [x] **Login**: Log out, then log back in.
 - [x] **Forgot Password**: Go to `/forgot-password`. Enter email. (Note: Real email sending requires SMTP setup in Supabase, but check if UI feedback works).
-- [ ] **Protected Routes**:
+- [x] **Protected Routes**:
     -   Log out.
     -   Try to access `http://localhost:5173/dashboard`.
     -   **Expected**: Redirected to `/login`.
@@ -46,19 +46,19 @@ Before testing, ensure:
 *Goal: Verify the core value proposition (learning).*
 
 ### Dashboard & Catalog
-- [ ] **Dashboard**: Ensure "Hello, [Name]" appears. Check if Gamification stats (Streak/XP) are visible.
-- [ ] **Course Catalog**: Go to "All Courses".
+- [x] **Dashboard**: Ensure "Hello, [Name]" appears. Check if Gamification stats (Streak/XP) are visible.
+- [x] **Course Catalog**: Go to "All Courses".
     -   **Search**: Type "Korean". List should filter.
     -   **Filter**: Select "Not Owned".
-- [ ] **Purchase Simulation**:
+- [x] **Purchase Simulation**:
     -   Click "Enroll" on a course (e.g., "Korean for Beginners").
     -   Fill out the fake credit card form.
     -   **Expected**: Success animation -> Page reload -> Button changes to "Access Course".
 
 ### The Course Player
-- [ ] **Video Playback**: Open a video lesson. Ensure YouTube/Vimeo embed loads.
-- [ ] **Audio Player**: Open an audio lesson. Test Play/Pause and **Speed Control** (1.2x).
-- [ ] **Notes**:
+- [x] **Video Playback**: Open a video lesson. Ensure YouTube/Vimeo embed loads.
+- [x] **Audio Player**: Open an audio lesson. Test Play/Pause and **Speed Control** (1.2x).
+- [x] **Notes**:
     -   Type a note in the sidebar.
     -   Refresh the page.
     -   **Expected**: Note should persist (fetched from DB).
@@ -149,11 +149,5 @@ Before testing, ensure:
     -   Check Hamburger menu functionality.
     -   Check Video Player responsiveness.
 - [ ] **404 Page**: Go to `http://localhost:5173/random-page-xyz`. Verify "Page Not Found" design.
+- [ ] **Profile picture**: Upload a different profile picture
 
----
-
-## ✅ Pass Criteria
-The project is considered **Ready for Launch** when:
-1. No "White Screen of Death" occurs.
-2. A user can go from Landing Page -> Registration -> Purchase -> Lesson Completion without errors.
-3. Admin can add content without touching the database directly.
