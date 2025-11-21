@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { Upload, Package, LayoutList, Loader2, Trash2, RefreshCw, Users, MessageSquare, Download, Image as ImageIcon, Edit, X } from 'lucide-react'
+import { Upload, Package, LayoutList, Loader2, Trash2, RefreshCw, Users, MessageSquare, Download, Image as ImageIcon, Edit, X, FileText, Video, Mic } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { extractTag, cleanDescription, generateFilePath } from '../../lib/helpers'
 
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth()
@@ -10,22 +11,28 @@ export default function AdminDashboard() {
   
   const [activeTab, setActiveTab] = useState('lessons')
   const [loading, setLoading] = useState(false)
-  const [editingId, setEditingId] = useState(null) // Track what we are editing
+  const [editingId, setEditingId] = useState(null)
   
-  // Data
+  // Data State
   const [courses, setCourses] = useState([])
   const [allLessons, setAllLessons] = useState([])
   const [allProducts, setAllProducts] = useState([])
   const [leads, setLeads] = useState([])
   const [messages, setMessages] = useState([])
 
-  // Forms
-  const [lessonData, setLessonData] = useState({ title: "", course_id: "", video_url: "", quizlet_url: "", description: "", type: "video" })
-  const [lessonFile, setLessonFile] = useState(null)
+  // Lesson Form State
+  const [lessonData, setLessonData] = useState({ 
+    title: "", course_id: "", video_url: "", quizlet_url: "", description: "", type: "video", pdf_url: "" 
+  })
+  const [lessonMediaFile, setLessonMediaFile] = useState(null)
+  const [lessonPdfFile, setLessonPdfFile] = useState(null)
   
-  const [productData, setProductData] = useState({ id: "", title: "", price: "", type: "course", description: "", image_url: "", zoom_link: "" })
-  const [productFile, setProductFile] = useState(null) 
-  const [coverImageFile, setCoverImageFile] = useState(null)
+  // Product Form State
+  const [productData, setProductData] = useState({ 
+    id: "", title: "", price: "", type: "course", description: "", image_url: "", zoom_link: "", download_link: "" 
+  })
+  const [productCoverFile, setProductCoverFile] = useState(null)
+  const [productEbookFile, setProductEbookFile] = useState(null)
 
   useEffect(() => {
     if (!authLoading && !isAdmin) navigate('/dashboard')
@@ -34,138 +41,148 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     setLoading(true)
-    const { data: prodData } = await supabase.from('products').select('*').order('created_at', {ascending: false})
-    if (prodData) {
-      setAllProducts(prodData)
-      const courseList = prodData.filter(p => p.type === 'course')
-      setCourses(courseList)
-      if(courseList.length > 0 && !lessonData.course_id) setLessonData(prev => ({ ...prev, course_id: courseList[0].id }))
-    }
-    const { data: lessData } = await supabase.from('lessons').select('*, products(title)').order('created_at', {ascending: false})
-    if (lessData) setAllLessons(lessData)
-    const { data: leadsData } = await supabase.from('webinar_leads').select('*').order('created_at', {ascending: false})
-    if (leadsData) setLeads(leadsData)
-    const { data: msgData } = await supabase.from('contact_messages').select('*').order('created_at', {ascending: false})
-    if (msgData) setMessages(msgData)
+    try {
+      const { data: prodData } = await supabase.from('products').select('*').order('created_at', {ascending: false})
+      if (prodData) {
+        setAllProducts(prodData)
+        const courseList = prodData.filter(p => p.type === 'course')
+        setCourses(courseList)
+        if(courseList.length > 0 && !lessonData.course_id) setLessonData(prev => ({ ...prev, course_id: courseList[0].id }))
+      }
+      const { data: lessData } = await supabase.from('lessons').select('*, products(title)').order('created_at', {ascending: false})
+      if (lessData) setAllLessons(lessData)
+      const { data: leadsData } = await supabase.from('webinar_leads').select('*').order('created_at', {ascending: false})
+      if (leadsData) setLeads(leadsData)
+      const { data: msgData } = await supabase.from('contact_messages').select('*').order('created_at', {ascending: false})
+      if (msgData) setMessages(msgData)
+    } catch(e) { console.error(e) }
     setLoading(false)
   }
 
-  const uploadFileToStorage = async (file, folder) => {
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-    const { error } = await supabase.storage.from('course-materials').upload(fileName, file)
+  const uploadToStorage = async (file, bucket, folder) => {
+    if (!file) return null
+    const path = generateFilePath(folder, file)
+    const { error } = await supabase.storage.from(bucket).upload(path, file)
     if (error) throw error
-    const { data } = supabase.storage.from('course-materials').getPublicUrl(fileName)
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
     return data.publicUrl
   }
 
-  // --- EDIT LOGIC ---
-  const startEditProduct = (product) => {
-    setEditingId(product.id)
-    // Extract hidden Zoom/Download links from description
-    const zoomMatch = product.description?.match(/\[\[ZOOM::(.*?)\]\]/)
-    const downloadMatch = product.description?.match(/\[\[DOWNLOAD_URL::(.*?)\]\]/)
+  const downloadCSV = () => {
+    if(leads.length === 0) return;
+    const headers = ["Name", "Email", "Date", "Webinar Preference"];
+    const rows = leads.map(l => [l.full_name, l.email, new Date(l.created_at).toLocaleDateString(), l.webinar_date]);
     
-    // Clean description for the textarea
-    let cleanDesc = product.description || ""
-    cleanDesc = cleanDesc.replace(/\[\[ZOOM::.*?\]\]/, '').replace(/\[\[DOWNLOAD_URL::.*?\]\]/, '').trim()
+    let csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n" 
+      + rows.map(e => e.join(",")).join("\n");
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "webinar_leads.csv");
+    document.body.appendChild(link);
+    link.click();
+  }
 
+  const startEditProduct = (p) => {
+    setEditingId(p.id)
     setProductData({
-      id: product.id,
-      title: product.title,
-      price: product.price,
-      type: product.type,
-      description: cleanDesc,
-      image_url: product.image_url || "",
-      zoom_link: zoomMatch ? zoomMatch[1] : "",
-      // Store existing download link internally if needed, but for now we just re-upload if changing
+      id: p.id,
+      title: p.title,
+      price: p.price,
+      type: p.type,
+      description: cleanDescription(p.description),
+      image_url: p.image_url || "",
+      zoom_link: extractTag(p.description, 'ZOOM') || "",
+      download_link: extractTag(p.description, 'DOWNLOAD_URL') || ""
     })
     window.scrollTo(0,0)
   }
 
-  const startEditLesson = (lesson) => {
-    setEditingId(lesson.id)
+  const startEditLesson = (l) => {
+    setEditingId(l.id)
     setLessonData({
-      title: lesson.title,
-      course_id: lesson.course_id,
-      video_url: lesson.video_url || "",
-      quizlet_url: lesson.quizlet_url || "",
-      description: lesson.description || "",
-      type: lesson.type || "video"
+      title: l.title,
+      course_id: l.course_id,
+      type: l.type || 'video',
+      video_url: l.video_url || "",
+      pdf_url: l.pdf_url || "",
+      quizlet_url: l.quizlet_url || "",
+      description: l.description || ""
     })
     window.scrollTo(0,0)
   }
 
   const cancelEdit = () => {
     setEditingId(null)
-    setProductData({ id: "", title: "", price: "", type: "course", description: "", image_url: "", zoom_link: "" })
-    setLessonData({ ...lessonData, title: "", video_url: "", quizlet_url: "", description: "" })
+    setProductData({ id: "", title: "", price: "", type: "course", description: "", image_url: "", zoom_link: "", download_link: "" })
+    setLessonData({ ...lessonData, title: "", video_url: "", pdf_url: "", quizlet_url: "", description: "" })
+    setLessonMediaFile(null)
+    setLessonPdfFile(null)
+    setProductCoverFile(null)
+    setProductEbookFile(null)
   }
 
-  // --- SAVE LOGIC ---
   const handleSaveProduct = async (e) => {
     e.preventDefault()
     setLoading(true)
     try {
-      const pid = productData.id || productData.title.toLowerCase().replace(/[^a-z0-9]/g, '-')
-      let finalDesc = productData.description
+      let finalImage = productData.image_url
+      if (productCoverFile) finalImage = await uploadToStorage(productCoverFile, 'course-materials', 'covers')
 
-      // Re-append Tags
+      let finalDownload = productData.download_link
+      if (productEbookFile) finalDownload = await uploadToStorage(productEbookFile, 'course-materials', 'ebooks')
+
+      let finalDesc = productData.description
       if (productData.type === 'standalone' && productData.zoom_link) {
         finalDesc += `\n\n[[ZOOM::${productData.zoom_link}]]`
       }
-      
-      if (productData.type === 'ebook' && productFile) {
-        const url = await uploadFileToStorage(productFile, 'ebooks')
-        finalDesc += `\n\n[[DOWNLOAD_URL::${url}]]`
-      } else if (productData.type === 'ebook' && editingId) {
-        // Keep old link if editing and no new file uploaded? 
-        // For MVP simplicity: If editing, we assume description already has the tag if we didn't strip it perfectly, 
-        // OR we just re-add it if we stored it. 
-        // To be safe: We only append if new file. If editing, user shouldn't delete the tag from textarea (but we stripped it).
-        // FIX: We need to fetch the old description to preserve link if file not changed? 
-        // Easier: Just tell admin to re-upload file or paste link in desc if changing.
+      if (productData.type === 'ebook' && finalDownload) {
+        finalDesc += `\n\n[[DOWNLOAD_URL::${finalDownload}]]`
       }
 
-      let finalImageUrl = productData.image_url
-      if (coverImageFile) finalImageUrl = await uploadFileToStorage(coverImageFile, 'covers')
-
-      const payload = { 
-        title: productData.title, 
-        price: productData.price, 
-        type: productData.type, 
-        description: finalDesc, 
-        image_url: finalImageUrl 
+      const payload = {
+        title: productData.title,
+        price: productData.price,
+        type: productData.type,
+        description: finalDesc,
+        image_url: finalImage
       }
+
+      const pid = productData.id || productData.title.toLowerCase().replace(/[^a-z0-9]/g, '-')
 
       if (editingId) {
         const { error } = await supabase.from('products').update(payload).eq('id', editingId)
         if (error) throw error
-        alert("Prodotto aggiornato!")
       } else {
         const { error } = await supabase.from('products').insert([{ ...payload, id: pid }])
         if (error) throw error
-        alert("Prodotto creato!")
       }
 
+      alert("Prodotto salvato!")
       cancelEdit()
       fetchData()
-    } catch (err) { alert(err.message) } finally { setLoading(false) }
+    } catch (err) { alert("Errore: " + err.message) } 
+    finally { setLoading(false) }
   }
 
   const handleSaveLesson = async (e) => {
     e.preventDefault()
     setLoading(true)
     try {
-      let resourceUrl = null
-      if (lessonFile) resourceUrl = await uploadFileToStorage(lessonFile, 'lessons')
-      
-      const finalVideoUrl = lessonData.type === 'audio' ? (resourceUrl || lessonData.video_url) : lessonData.video_url
-      const finalPdfUrl = (lessonData.type === 'video' && resourceUrl) ? resourceUrl : (editingId ? lessonData.pdf_url : null) // Keep old pdf if editing? MVP: just overwrite or keep logic simple.
+      let finalVideoUrl = lessonData.video_url
+      if (lessonData.type === 'audio' && lessonMediaFile) {
+        finalVideoUrl = await uploadToStorage(lessonMediaFile, 'course-materials', 'lessons/audio')
+      }
+      let finalPdfUrl = lessonData.pdf_url
+      if (lessonPdfFile) {
+        finalPdfUrl = await uploadToStorage(lessonPdfFile, 'course-materials', 'lessons/pdf')
+      }
 
       const payload = {
-        title: lessonData.title,
         course_id: lessonData.course_id,
+        title: lessonData.title,
         type: lessonData.type,
         video_url: finalVideoUrl,
         pdf_url: finalPdfUrl,
@@ -176,77 +193,109 @@ export default function AdminDashboard() {
       if (editingId) {
         const { error } = await supabase.from('lessons').update(payload).eq('id', editingId)
         if (error) throw error
-        alert("Lezione aggiornata!")
       } else {
         const { error } = await supabase.from('lessons').insert([payload])
         if (error) throw error
-        alert("Lezione creata!")
       }
+
+      alert("Lezione salvata!")
       cancelEdit()
       fetchData()
-    } catch (err) { alert(err.message) } finally { setLoading(false) }
+    } catch (err) { alert("Errore: " + err.message) } 
+    finally { setLoading(false) }
   }
 
   const handleDelete = async (table, id) => {
-    if(!window.confirm("Eliminare definitivamente?")) return;
+    if(!window.confirm("Sei sicuro? L'azione è irreversibile.")) return;
     await supabase.from(table).delete().eq('id', id)
     fetchData()
   }
 
-  const exportLeadsCSV = () => {
-    if (leads.length === 0) return alert("Nessun dato da esportare")
-    const headers = ["Nome,Email,Data Webinar,Data Iscrizione,Privacy"]
-    const rows = leads.map(l => `"${l.full_name}","${l.email}","${l.webinar_date}","${new Date(l.created_at).toLocaleDateString()}","${l.gdpr_consent}"`)
-    const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n")
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
-    link.setAttribute("download", "webinar_leads.csv")
-    document.body.appendChild(link)
-    link.click()
-  }
-
-  if (authLoading || !isAdmin) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple"/></div>
+  if (authLoading || !isAdmin) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-brand-purple"/></div>
 
   return (
-    <div className="max-w-6xl mx-auto pb-20">
+    <div className="max-w-7xl mx-auto pb-20">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-brand-dark">Admin Dashboard</h1>
-        <button onClick={fetchData} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"><RefreshCw size={20}/></button>
+        <button onClick={fetchData} className="p-2 bg-white shadow-sm rounded-full hover:bg-gray-50 text-brand-purple"><RefreshCw size={20}/></button>
       </div>
 
-      <div className="flex gap-2 mb-8 border-b border-gray-200 overflow-x-auto pb-1">
-        <TabButton id="lessons" active={activeTab} set={setActiveTab} icon={LayoutList} label="Lezioni" />
-        <TabButton id="products" active={activeTab} set={setActiveTab} icon={Package} label="Prodotti" />
-        <TabButton id="leads" active={activeTab} set={setActiveTab} icon={Users} label="Leads" />
-        <TabButton id="messages" active={activeTab} set={setActiveTab} icon={MessageSquare} label="Messaggi" />
+      <div className="flex gap-4 mb-8 border-b border-gray-200 overflow-x-auto pb-1">
+        {[
+          { id: 'lessons', icon: LayoutList, label: 'Lezioni' },
+          { id: 'products', icon: Package, label: 'Prodotti' },
+          { id: 'leads', icon: Users, label: 'Iscritti' },
+          { id: 'messages', icon: MessageSquare, label: 'Messaggi' }
+        ].map(tab => (
+          <button 
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)} 
+            className={`flex items-center gap-2 px-4 py-2 font-bold rounded-t-lg transition ${activeTab === tab.id ? 'bg-brand-purple text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+          >
+            <tab.icon size={18}/> {tab.label}
+          </button>
+        ))}
       </div>
 
+      {/* --- LESSONS TAB --- */}
       {activeTab === 'lessons' && (
         <div className="grid lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-200 h-fit sticky top-24">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="font-bold text-brand-dark">{editingId ? 'Modifica Lezione' : 'Nuova Lezione'}</h2>
-                {editingId && <button onClick={cancelEdit}><X size={18}/></button>}
+           <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg border-t-4 border-brand-purple h-fit sticky top-24">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="font-bold text-lg text-gray-800">{editingId ? 'Modifica Lezione' : 'Nuova Lezione'}</h2>
+                {editingId && <button onClick={cancelEdit}><X size={20} className="text-gray-400 hover:text-red-500"/></button>}
               </div>
               <form onSubmit={handleSaveLesson} className="space-y-4">
-                <select className="input-field" value={lessonData.course_id} onChange={e => setLessonData({...lessonData, course_id: e.target.value})}>{courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</select>
-                <input required type="text" className="input-field" placeholder="Titolo" value={lessonData.title} onChange={e => setLessonData({...lessonData, title: e.target.value})} />
-                <select className="input-field" value={lessonData.type} onChange={e => setLessonData({...lessonData, type: e.target.value})}><option value="video">Video</option><option value="audio">Audio</option></select>
-                {lessonData.type === 'video' && <input type="url" className="input-field" placeholder="Video URL" value={lessonData.video_url} onChange={e => setLessonData({...lessonData, video_url: e.target.value})} />}
-                <input type="url" className="input-field" placeholder="Quizlet URL" value={lessonData.quizlet_url} onChange={e => setLessonData({...lessonData, quizlet_url: e.target.value})} />
-                <textarea className="input-field" placeholder="Descrizione" rows="3" value={lessonData.description} onChange={e => setLessonData({...lessonData, description: e.target.value})} />
-                <input type="file" className="input-field p-2 text-xs" onChange={e => setLessonFile(e.target.files[0])} />
-                <button disabled={loading} type="submit" className="btn-primary w-full">{loading ? <Loader2 className="animate-spin mx-auto"/> : (editingId ? "Aggiorna" : "Salva")}</button>
+                <div>
+                  <label className="label">Corso di appartenenza</label>
+                  <select className="input-field" value={lessonData.course_id} onChange={e => setLessonData({...lessonData, course_id: e.target.value})}>
+                    {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                  </select>
+                </div>
+                
+                <input required type="text" className="input-field" placeholder="Titolo Lezione" value={lessonData.title} onChange={e => setLessonData({...lessonData, title: e.target.value})} />
+                
+                <div>
+                   <label className="label">Tipo Lezione</label>
+                   <select className="input-field" value={lessonData.type} onChange={e => setLessonData({...lessonData, type: e.target.value})}><option value="video">Video</option><option value="audio">Audio</option></select>
+                </div>
+
+                {lessonData.type === 'video' ? (
+                  <input type="url" className="input-field" placeholder="YouTube/Vimeo URL" value={lessonData.video_url} onChange={e => setLessonData({...lessonData, video_url: e.target.value})} />
+                ) : (
+                  <div className="file-input-wrapper">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600"><Mic size={16}/> {lessonMediaFile ? lessonMediaFile.name : "Carica file MP3"}</label>
+                    <input type="file" accept="audio/*" className="hidden" onChange={e => setLessonMediaFile(e.target.files[0])} />
+                  </div>
+                )}
+
+                <div className="file-input-wrapper">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600"><FileText size={16}/> {lessonPdfFile ? lessonPdfFile.name : "Allega PDF (Opzionale)"}</label>
+                  <input type="file" accept=".pdf" className="hidden" onChange={e => setLessonPdfFile(e.target.files[0])} />
+                </div>
+                
+                <input type="url" className="input-field" placeholder="Link Quizlet (Flashcards)" value={lessonData.quizlet_url} onChange={e => setLessonData({...lessonData, quizlet_url: e.target.value})} />
+                <textarea className="input-field" placeholder="Descrizione lezione..." rows="3" value={lessonData.description} onChange={e => setLessonData({...lessonData, description: e.target.value})} />
+                
+                <button disabled={loading} type="submit" className="btn-primary w-full">{loading ? <Loader2 className="animate-spin mx-auto"/> : "Salva Lezione"}</button>
               </form>
            </div>
+
            <div className="lg:col-span-2 space-y-3">
               {allLessons.map(l => (
-                  <div key={l.id} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center">
-                      <div><h4 className="font-bold text-gray-800">{l.title}</h4><p className="text-xs text-gray-500">{l.products?.title} • {l.type}</p></div>
+                  <div key={l.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center hover:shadow-md transition">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${l.type === 'audio' ? 'bg-purple-100 text-brand-purple' : 'bg-blue-100 text-brand-blue'}`}>
+                           {l.type === 'audio' ? <Mic size={20}/> : <Video size={20}/>}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-gray-800">{l.title}</h4>
+                          <p className="text-xs text-gray-500">{l.products?.title || 'Nessun Corso'} • {l.pdf_url ? '📎 PDF Incluso' : 'Nessun PDF'}</p>
+                        </div>
+                      </div>
                       <div className="flex gap-2">
-                        <button onClick={() => startEditLesson(l)} className="text-blue-400 hover:text-blue-600 p-2"><Edit size={18}/></button>
-                        <button onClick={() => handleDelete('lessons', l.id)} className="text-red-400 hover:text-red-600 p-2"><Trash2 size={18}/></button>
+                        <button onClick={() => startEditLesson(l)} className="action-btn text-blue-500 bg-blue-50"><Edit size={18}/></button>
+                        <button onClick={() => handleDelete('lessons', l.id)} className="action-btn text-red-500 bg-red-50"><Trash2 size={18}/></button>
                       </div>
                   </div>
               ))}
@@ -254,49 +303,69 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* --- PRODUCTS TAB --- */}
       {activeTab === 'products' && (
         <div className="grid lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-200 h-fit sticky top-24">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="font-bold text-brand-dark">{editingId ? 'Modifica Prodotto' : 'Nuovo Prodotto'}</h2>
-                {editingId && <button onClick={cancelEdit}><X size={18}/></button>}
+           <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg border-t-4 border-brand-blue h-fit sticky top-24">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="font-bold text-lg text-gray-800">{editingId ? 'Modifica Prodotto' : 'Nuovo Prodotto'}</h2>
+                {editingId && <button onClick={cancelEdit}><X size={20} className="text-gray-400 hover:text-red-500"/></button>}
               </div>
               <form onSubmit={handleSaveProduct} className="space-y-4">
-                <input required type="text" className="input-field" placeholder="Nome" value={productData.title} onChange={e => setProductData({...productData, title: e.target.value})} />
-                <div className="grid grid-cols-2 gap-2">
-                   <input required type="text" className="input-field" placeholder="Prezzo" value={productData.price} onChange={e => setProductData({...productData, price: e.target.value})} />
-                   <select className="input-field" value={productData.type} onChange={e => setProductData({...productData, type: e.target.value})}><option value="course">Corso</option><option value="ebook">Ebook</option><option value="standalone">Live</option></select>
-                </div>
-                {!editingId && <input type="text" className="input-field" placeholder="ID (Slug)" value={productData.id} onChange={e => setProductData({...productData, id: e.target.value})} />}
+                <input required type="text" className="input-field" placeholder="Titolo Prodotto" value={productData.title} onChange={e => setProductData({...productData, title: e.target.value})} />
                 
-                {/* Dynamic Fields based on Type */}
-                {productData.type === 'standalone' && (
-                   <input type="url" className="input-field" placeholder="Zoom Link (es. zoom.us/j/123)" value={productData.zoom_link} onChange={e => setProductData({...productData, zoom_link: e.target.value})} />
-                )}
-
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-3 text-center cursor-pointer relative hover:bg-gray-50">
-                     <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={e => setCoverImageFile(e.target.files[0])} />
-                     <span className="text-xs text-gray-500 flex flex-col items-center gap-1"><ImageIcon size={16}/> {coverImageFile ? coverImageFile.name : "Carica Copertina"}</span>
+                <div className="grid grid-cols-2 gap-3">
+                   <input required type="text" className="input-field" placeholder="Prezzo (es. 15.000 Ft)" value={productData.price} onChange={e => setProductData({...productData, price: e.target.value})} />
+                   <select className="input-field" value={productData.type} onChange={e => setProductData({...productData, type: e.target.value})}>
+                      <option value="course">Corso (Video)</option>
+                      <option value="ebook">Ebook (Download)</option>
+                      <option value="standalone">Live (Zoom)</option>
+                   </select>
                 </div>
 
-                {productData.type === 'ebook' && (
-                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-3 text-center cursor-pointer relative hover:bg-gray-50">
-                     <input type="file" accept=".pdf" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={e => setProductFile(e.target.files[0])} />
-                     <span className="text-xs text-gray-500 flex flex-col items-center gap-1"><Upload size={16}/> {productFile ? productFile.name : "Carica PDF Ebook"}</span>
+                {!editingId && <input type="text" className="input-field text-sm font-mono" placeholder="ID Univoco (es. coreano-base)" value={productData.id} onChange={e => setProductData({...productData, id: e.target.value})} />}
+
+                {productData.type === 'standalone' && (
+                   <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                      <label className="label text-brand-blue">Link Zoom Lezione</label>
+                      <input type="url" className="input-field bg-white" placeholder="https://zoom.us/..." value={productData.zoom_link} onChange={e => setProductData({...productData, zoom_link: e.target.value})} />
                    </div>
                 )}
+
+                {productData.type === 'ebook' && (
+                   <div className="file-input-wrapper border-dashed border-2 border-purple-200 bg-purple-50">
+                      <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-purple font-bold"><Upload size={16}/> {productEbookFile ? productEbookFile.name : "Carica PDF Ebook"}</label>
+                      <input type="file" accept=".pdf" className="hidden" onChange={e => setProductEbookFile(e.target.files[0])} />
+                   </div>
+                )}
+
+                <div className="file-input-wrapper">
+                   <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600"><ImageIcon size={16}/> {productCoverFile ? productCoverFile.name : "Carica Copertina (Image)"}</label>
+                   <input type="file" accept="image/*" className="hidden" onChange={e => setProductCoverFile(e.target.files[0])} />
+                </div>
+
+                <textarea className="input-field" placeholder="Descrizione..." rows="4" value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} />
                 
-                <textarea rows="3" className="input-field" placeholder="Descrizione" value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} />
-                <button disabled={loading} type="submit" className="btn-primary w-full">{loading ? <Loader2 className="animate-spin mx-auto"/> : (editingId ? "Aggiorna" : "Crea")}</button>
+                <button disabled={loading} type="submit" className="btn-primary w-full bg-brand-blue">{loading ? <Loader2 className="animate-spin mx-auto"/> : "Salva Prodotto"}</button>
               </form>
            </div>
+
            <div className="lg:col-span-2 space-y-3">
               {allProducts.map(p => (
-                  <div key={p.id} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center">
-                      <div className="flex gap-3 items-center"><img src={p.image_url || 'https://placehold.co/50'} className="w-10 h-10 rounded-md object-cover" /><div><h4 className="font-bold text-gray-800">{p.title}</h4><p className="text-xs text-gray-500 uppercase">{p.type}</p></div></div>
+                  <div key={p.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center hover:shadow-md transition">
+                      <div className="flex items-center gap-4">
+                        <img src={p.image_url || 'https://placehold.co/50'} className="w-12 h-12 rounded-md object-cover bg-gray-200" />
+                        <div>
+                          <h4 className="font-bold text-gray-800">{p.title}</h4>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 uppercase font-bold">
+                            <span className={`px-2 py-0.5 rounded ${p.type === 'course' ? 'bg-purple-100 text-brand-purple' : p.type === 'ebook' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{p.type}</span>
+                            <span>{p.price}</span>
+                          </div>
+                        </div>
+                      </div>
                       <div className="flex gap-2">
-                        <button onClick={() => startEditProduct(p)} className="text-blue-400 hover:text-blue-600 p-2"><Edit size={18}/></button>
-                        <button onClick={() => handleDelete('products', p.id)} className="text-red-400 hover:text-red-600 p-2"><Trash2 size={18}/></button>
+                        <button onClick={() => startEditProduct(p)} className="action-btn text-blue-500 bg-blue-50"><Edit size={18}/></button>
+                        <button onClick={() => handleDelete('products', p.id)} className="action-btn text-red-500 bg-red-50"><Trash2 size={18}/></button>
                       </div>
                   </div>
               ))}
@@ -304,60 +373,62 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* --- LEADS TAB --- */}
       {activeTab === 'leads' && (
-         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-               <h3 className="font-bold text-gray-700">Iscritti Webinar ({leads.length})</h3>
-               <button onClick={exportLeadsCSV} className="flex items-center gap-2 text-sm bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition"><Download size={16}/> Export CSV</button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                 <thead className="text-gray-500 font-bold uppercase border-b border-gray-100">
-                    <tr><th className="p-4">Data</th><th className="p-4">Nome</th><th className="p-4">Email</th><th className="p-4">Webinar</th></tr>
-                 </thead>
-                 <tbody className="divide-y divide-gray-100">
-                    {leads.map(lead => (
-                       <tr key={lead.id}>
-                          <td className="p-4 text-gray-500">{new Date(lead.created_at).toLocaleDateString()}</td>
-                          <td className="p-4 font-bold text-gray-800">{lead.full_name}</td>
-                          <td className="p-4 text-gray-600">{lead.email}</td>
-                          <td className="p-4"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md font-bold text-xs">{lead.webinar_date}</span></td>
-                       </tr>
-                    ))}
-                 </tbody>
-              </table>
-            </div>
-         </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+           <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-lg text-gray-700">Iscritti Webinar ({leads.length})</h3>
+              <button onClick={downloadCSV} className="flex items-center gap-2 bg-brand-dark text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800"><Download size={16}/> Export CSV</button>
+           </div>
+           <div className="overflow-x-auto">
+             <table className="w-full text-sm text-left">
+                <thead className="text-gray-400 font-bold uppercase border-b border-gray-100 bg-white">
+                   <tr><th className="p-4">Data Reg.</th><th className="p-4">Nome</th><th className="p-4">Email</th><th className="p-4">Preferenza</th></tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                   {leads.map(lead => (
+                      <tr key={lead.id} className="hover:bg-gray-50">
+                         <td className="p-4 text-gray-500">{new Date(lead.created_at).toLocaleDateString()}</td>
+                         <td className="p-4 font-bold text-gray-800">{lead.full_name}</td>
+                         <td className="p-4 text-gray-600">{lead.email}</td>
+                         <td className="p-4"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-md font-bold text-xs">{lead.webinar_date}</span></td>
+                      </tr>
+                   ))}
+                </tbody>
+             </table>
+           </div>
+        </div>
       )}
 
+      {/* --- MESSAGES TAB --- */}
       {activeTab === 'messages' && (
-         <div className="space-y-4">
-            {messages.length === 0 && <p className="text-gray-400 text-center p-10">Nessun messaggio.</p>}
-            {messages.map(msg => (
-               <div key={msg.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                  <div className="flex justify-between items-start mb-2">
-                     <div>
-                        <h4 className="font-bold text-gray-800">{msg.name}</h4>
-                        <p className="text-sm text-brand-purple">{msg.email}</p>
-                     </div>
-                     <span className="text-xs text-gray-400">{new Date(msg.created_at).toLocaleString()}</span>
-                  </div>
-                  <p className="text-gray-600 bg-gray-50 p-4 rounded-lg text-sm">{msg.message}</p>
-               </div>
-            ))}
-         </div>
+        <div className="grid md:grid-cols-2 gap-4">
+           {messages.map(msg => (
+              <div key={msg.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative group hover:shadow-md transition">
+                 <div className="flex justify-between items-start mb-2">
+                    <div>
+                       <h4 className="font-bold text-gray-800">{msg.name}</h4>
+                       <p className="text-xs text-brand-purple font-mono">{msg.email}</p>
+                    </div>
+                    <span className="text-xs text-gray-400">{new Date(msg.created_at).toLocaleDateString()}</span>
+                 </div>
+                 <p className="text-gray-600 bg-gray-50 p-3 rounded-lg text-sm mt-3 italic">"{msg.message}"</p>
+                 <button onClick={() => handleDelete('contact_messages', msg.id)} className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition"><Trash2 size={16}/></button>
+              </div>
+           ))}
+           {messages.length === 0 && <p className="text-gray-400 col-span-2 text-center p-10">Nessun messaggio ricevuto.</p>}
+        </div>
       )}
-      
+
       <style>{`
-        .input-field { width: 100%; padding: 0.6rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; outline: none; font-size: 0.9rem; }
-        .btn-primary { background: #192335; color: white; font-weight: bold; padding: 0.8rem; border-radius: 0.5rem; }
+        .label { display: block; font-size: 0.85rem; font-weight: bold; color: #4b5563; margin-bottom: 0.3rem; }
+        .input-field { width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; outline: none; font-size: 0.9rem; transition: all 0.2s; }
+        .input-field:focus { border-color: #6a11cb; ring: 2px solid #6a11cb33; }
+        .btn-primary { background: #192335; color: white; font-weight: bold; padding: 0.8rem; border-radius: 0.5rem; transition: opacity 0.2s; }
+        .btn-primary:hover { opacity: 0.9; }
+        .file-input-wrapper { border: 1px solid #e5e7eb; padding: 0.75rem; border-radius: 0.5rem; background: #f9fafb; }
+        .action-btn { padding: 0.5rem; border-radius: 0.5rem; transition: background 0.2s; }
       `}</style>
     </div>
   )
 }
-
-const TabButton = ({ id, active, set, icon: Icon, label }) => (
-  <button onClick={() => set(id)} className={`pb-3 px-4 font-bold whitespace-nowrap transition flex items-center gap-2 ${active === id ? 'text-brand-purple border-b-2 border-brand-purple' : 'text-gray-500 hover:text-gray-700'}`}>
-    <Icon size={18}/> {label}
-  </button>
-)

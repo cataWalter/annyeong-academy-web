@@ -14,7 +14,7 @@ export default function WebinarForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.gdpr_consent) return alert("Devi accettare la privacy policy")
+    if (!formData.gdpr_consent) return alert("You must accept the privacy policy")
     
     setLoading(true)
     
@@ -25,7 +25,7 @@ export default function WebinarForm() {
     setLoading(false)
 
     if (error) {
-      alert("Errore durante l'iscrizione: " + error.message)
+      alert("Registration error: " + error.message)
     } else {
       setSuccess(true)
     }
@@ -37,17 +37,17 @@ export default function WebinarForm() {
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle className="w-10 h-10 text-green-600" />
         </div>
-        <h3 className="text-2xl font-bold text-brand-dark mb-2">Iscrizione Confermata! 🎉</h3>
+        <h3 className="text-2xl font-bold text-brand-dark mb-2">Registration Confirmed! 🎉</h3>
         <p className="text-gray-600 mb-6">
-          Grazie {formData.full_name.split(' ')[0]}! Ti abbiamo riservato un posto.
-          <br/>Controlla la tua email per il link di Zoom.
+          Thanks {formData.full_name.split(' ')[0]}! We've reserved your spot.
+          <br/>Check your email for the Zoom link.
         </p>
         <div className="bg-gray-50 p-4 rounded-xl inline-block text-left">
           <div className="flex items-center gap-3 mb-2">
             <Calendar className="text-brand-purple" size={20} />
-            <span className="font-bold text-gray-700">{formData.webinar_date === 'Dec 6' ? 'Venerdì 6 Dicembre' : 'Sabato 7 Dicembre'}</span>
+            <span className="font-bold text-gray-700">{formData.webinar_date === 'Dec 6' ? 'Friday, Dec 6' : 'Saturday, Dec 7'}</span>
           </div>
-          <div className="text-sm text-gray-500 ml-8">Ore 18:00 - Live su Zoom</div>
+          <div className="text-sm text-gray-500 ml-8">18:00 - Live on Zoom</div>
         </div>
       </div>
     )
@@ -55,14 +55,14 @@ export default function WebinarForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 rounded-2xl shadow-xl max-w-md mx-auto border-t-4 border-brand-purple relative z-20">
-      <h3 className="text-xl font-bold text-brand-dark text-center mb-2">Prenota il tuo posto</h3>
+      <h3 className="text-xl font-bold text-brand-dark text-center mb-2">Reserve Your Spot</h3>
       
       <div>
-        <label className="block text-sm font-bold text-gray-700 mb-1">Nome Completo</label>
+        <label className="block text-sm font-bold text-gray-700 mb-1">Full Name</label>
         <input 
           required
           type="text"
-          placeholder="Es. Mario Rossi"
+          placeholder="e.g. John Doe"
           className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none bg-gray-50 focus:bg-white transition"
           value={formData.full_name}
           onChange={e => setFormData({...formData, full_name: e.target.value})}
@@ -74,7 +74,7 @@ export default function WebinarForm() {
         <input 
           required
           type="email"
-          placeholder="mario@email.com"
+          placeholder="john@email.com"
           className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none bg-gray-50 focus:bg-white transition"
           value={formData.email}
           onChange={e => setFormData({...formData, email: e.target.value})}
@@ -82,14 +82,14 @@ export default function WebinarForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-bold text-gray-700 mb-1">Scegli una data</label>
+        <label className="block text-sm font-bold text-gray-700 mb-1">Choose a Date</label>
         <select 
           className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none bg-gray-50 focus:bg-white transition"
           value={formData.webinar_date}
           onChange={e => setFormData({...formData, webinar_date: e.target.value})}
         >
-          <option value="Dec 6">📅 6 Dicembre - 18:00 (Venerdì)</option>
-          <option value="Dec 7">📅 7 Dicembre - 18:00 (Sabato)</option>
+          <option value="Dec 6">📅 Dec 6 - 18:00 (Friday)</option>
+          <option value="Dec 7">📅 Dec 7 - 18:00 (Saturday)</option>
         </select>
       </div>
 
@@ -103,7 +103,7 @@ export default function WebinarForm() {
           onChange={e => setFormData({...formData, gdpr_consent: e.target.checked})}
         />
         <label htmlFor="gdpr" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
-          Acconsento al trattamento dei dati personali secondo la <a href="/privacy" target="_blank" className="text-brand-purple underline hover:text-brand-blue">Privacy Policy</a>. Riceverai email solo relative a questo evento.
+          I agree to the data processing according to the <a href="/privacy" target="_blank" className="text-brand-purple underline hover:text-brand-blue">Privacy Policy</a>. You will only receive emails regarding this event.
         </label>
       </div>
 
@@ -112,10 +112,10 @@ export default function WebinarForm() {
         type="submit" 
         className="w-full bg-gradient-to-r from-brand-blue to-brand-purple text-white font-bold py-4 rounded-xl hover:opacity-90 disabled:opacity-50 flex justify-center items-center shadow-lg hover:shadow-xl hover:-translate-y-1 transition transform"
       >
-        {loading ? <Loader2 className="animate-spin" /> : "ISCRIVITI GRATIS ORA"}
+        {loading ? <Loader2 className="animate-spin" /> : "REGISTER FREE NOW"}
       </button>
       
-      <p className="text-center text-xs text-gray-400">🔒 I tuoi dati sono al sicuro. Nessuno spam.</p>
+      <p className="text-center text-xs text-gray-400">🔒 Your data is safe. No spam.</p>
     </form>
   )
 }

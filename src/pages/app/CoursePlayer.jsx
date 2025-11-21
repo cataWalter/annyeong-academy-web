@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { PlayCircle, FileDown, Lock, ExternalLink, Loader2, AlertCircle, ShoppingCart, Music, ChevronRight, ChevronLeft } from 'lucide-react'
 import { initiateCheckout } from '../../lib/payment'
+import { getEmbedUrl } from '../../lib/video'
 
 export default function CoursePlayer() {
   const { id } = useParams()
@@ -37,34 +38,22 @@ export default function CoursePlayer() {
     } catch (err) { console.error(err) } finally { setLoading(false) }
   }
 
-  const getEmbedUrl = (url) => {
-    if (!url) return null;
-    // Handle Standard YouTube
-    if (url.includes('youtube.com/watch?v=')) return url.replace('watch?v=', 'embed/');
-    // Handle Short YouTube
-    if (url.includes('youtu.be/')) return url.replace('youtu.be/', 'youtube.com/embed/');
-    // Handle Vimeo (Basic)
-    if (url.includes('vimeo.com')) return url.replace('vimeo.com/', 'player.vimeo.com/video/');
-    
-    return url;
-  }
-
   if (loading) return <div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin text-brand-purple" size={40} /></div>
 
   if (!hasAccess) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
         <div className="bg-gray-100 p-6 rounded-full mb-6"><Lock className="w-16 h-16 text-gray-400" /></div>
-        <h1 className="text-3xl font-bold text-brand-dark mb-2">Contenuto Bloccato</h1>
-        <p className="text-gray-500 mb-8 max-w-md">Devi acquistare <strong>{courseInfo?.title}</strong> per accedere.</p>
+        <h1 className="text-3xl font-bold text-brand-dark mb-2">Content Locked</h1>
+        <p className="text-gray-500 mb-8 max-w-md">You must purchase <strong>{courseInfo?.title}</strong> to access.</p>
         <button onClick={() => initiateCheckout(id, courseInfo?.title)} className="flex items-center gap-2 bg-gradient-to-r from-brand-blue to-brand-purple text-white px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:scale-105 transition">
-          <ShoppingCart /> Acquista Corso ({courseInfo?.price})
+          <ShoppingCart /> Purchase Course ({courseInfo?.price})
         </button>
       </div>
     )
   }
 
-  if (lessons.length === 0) return <div className="text-center py-20"><AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" /><h3 className="text-xl font-bold text-gray-600">Nessuna lezione</h3></div>
+  if (lessons.length === 0) return <div className="text-center py-20"><AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" /><h3 className="text-xl font-bold text-gray-600">No lessons available</h3></div>
 
   const activeLesson = lessons[activeLessonIndex]
   const hasNext = activeLessonIndex < lessons.length - 1
@@ -97,10 +86,10 @@ export default function CoursePlayer() {
 
           <div className="flex justify-between items-center pt-6 mt-6 border-t border-gray-100">
              <button disabled={!hasPrev} onClick={() => setActiveLessonIndex(i => i - 1)} className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
-               <ChevronLeft size={20} /> Precedente
+               <ChevronLeft size={20} /> Previous
              </button>
              <button disabled={!hasNext} onClick={() => setActiveLessonIndex(i => i + 1)} className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-brand-dark text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition">
-               Successiva <ChevronRight size={20} />
+               Next <ChevronRight size={20} />
              </button>
           </div>
         </div>
@@ -108,8 +97,8 @@ export default function CoursePlayer() {
 
       <div className="w-full lg:w-96 bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col h-[500px] lg:h-auto shadow-sm">
         <div className="p-5 border-b border-gray-100 bg-gray-50/50">
-          <h3 className="font-bold text-brand-dark text-lg">Programma</h3>
-          <p className="text-xs text-gray-500 mt-1">{lessons.length} Lezioni</p>
+          <h3 className="font-bold text-brand-dark text-lg">Curriculum</h3>
+          <p className="text-xs text-gray-500 mt-1">{lessons.length} Lessons</p>
         </div>
         <div className="overflow-y-auto flex-1">
           {lessons.map((lesson, index) => (

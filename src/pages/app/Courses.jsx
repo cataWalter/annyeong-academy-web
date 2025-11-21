@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { Video, Loader2, PlayCircle, ShoppingCart } from 'lucide-react'
 import { initiateCheckout } from '../../lib/payment'
 import { Link } from 'react-router-dom'
+import { cleanDescription } from '../../lib/helpers'
 
 export default function Courses() {
   const { user } = useAuth()
@@ -37,18 +38,16 @@ export default function Courses() {
     }
   }
 
-  const cleanDesc = (desc) => desc?.replace(/\[\[.*?\]\]/g, '')
-
   if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple" /></div>
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-brand-dark mb-2">Catalogo Corsi</h1>
-      <p className="text-gray-500 mb-8">Scegli tra corsi in diretta o video on-demand.</p>
+      <h1 className="text-2xl font-bold text-brand-dark mb-2">Course Catalog</h1>
+      <p className="text-gray-500 mb-8">Choose between live courses or video on-demand.</p>
 
       {courses.length === 0 && (
         <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-300">
-          <p className="text-gray-500">Nessun corso disponibile al momento.</p>
+          <p className="text-gray-500">No courses available at the moment.</p>
         </div>
       )}
 
@@ -60,7 +59,7 @@ export default function Courses() {
             <div key={course.id} className={`bg-white rounded-2xl overflow-hidden border transition group flex flex-col ${isOwned ? 'border-green-200 shadow-sm' : 'border-gray-100 hover:shadow-md'}`}>
               <div className="h-48 overflow-hidden relative bg-gray-100">
                 <img 
-                  src={course.image_url || 'https://placehold.co/600x400/6a11cb/ffffff?text=Corso'} 
+                  src={course.image_url || 'https://placehold.co/600x400/6a11cb/ffffff?text=Course'} 
                   alt={course.title} 
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                 />
@@ -71,7 +70,7 @@ export default function Courses() {
               
               <div className="p-6 flex-1 flex flex-col">
                 <h3 className="text-xl font-bold text-brand-dark mb-2">{course.title}</h3>
-                <p className="text-sm text-gray-500 mb-4 line-clamp-2 flex-1">{cleanDesc(course.description)}</p>
+                <p className="text-sm text-gray-500 mb-4 line-clamp-2 flex-1">{cleanDescription(course.description)}</p>
                 
                 <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                   {isOwned ? (
@@ -79,7 +78,7 @@ export default function Courses() {
                        to={`/corsi/${course.id}`}
                        className="w-full bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition flex items-center justify-center gap-2"
                      >
-                       <PlayCircle size={16} /> Accedi al Corso
+                       <PlayCircle size={16} /> Access Course
                      </Link>
                   ) : (
                     <>
@@ -88,7 +87,7 @@ export default function Courses() {
                         onClick={() => initiateCheckout(course.id, course.title)}
                         className="bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition flex items-center gap-2"
                       >
-                        <ShoppingCart size={16}/> Iscriviti
+                        <ShoppingCart size={16}/> Enroll
                       </button>
                     </>
                   )}

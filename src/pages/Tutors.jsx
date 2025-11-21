@@ -1,4 +1,4 @@
-﻿import Navbar from '../components/sections/Navbar'
+import Navbar from '../components/sections/Navbar'
 import Footer from '../components/sections/Footer'
 
 export default function Tutors() {
@@ -6,26 +6,26 @@ export default function Tutors() {
     {
       id: 1,
       name: "Kim Seon-saeng-nim",
-      role: "Capo Dipartimento & Principianti",
+      role: "Head of Dept & Beginners",
       image: "https://placehold.co/300x300/6a11cb/ffffff?text=Kim",
-      bio: "Laureata in linguistica alla Seoul National University. Kim ha sviluppato il nostro metodo 'Direct-Translation' per permettere agli italiani di imparare senza l'inglese.",
-      specialties: ["Grammatica Base", "Cultura Coreana", "K-Pop"]
+      bio: "Graduated in linguistics from Seoul National University. Kim developed our 'Direct-Translation' method to allow students to learn without English.",
+      specialties: ["Basic Grammar", "Korean Culture", "K-Pop"]
     },
     {
       id: 2,
       name: "Lee Seon-saeng-nim",
-      role: "Pronuncia & Conversazione",
+      role: "Pronunciation & Conversation",
       image: "https://placehold.co/300x300/2575fc/ffffff?text=Lee",
-      bio: "Ex attore di teatro, Lee Ã¨ specializzato nell'insegnare l'intonazione perfetta e la pronuncia standard di Seoul. Le sue lezioni sono sempre piene di energia.",
-      specialties: ["Speaking", "Recitazione", "Slang"]
+      bio: "Former theater actor, Lee specializes in teaching perfect intonation and standard Seoul pronunciation. His lessons are always full of energy.",
+      specialties: ["Speaking", "Acting", "Slang"]
     },
     {
       id: 3,
       name: "Park Seon-saeng-nim",
-      role: "Preparazione TOPIK",
+      role: "TOPIK Preparation",
       image: "https://placehold.co/300x300/ff9900/ffffff?text=Park",
-      bio: "Con 10 anni di esperienza nell'insegnamento accademico, Park prepara gli studenti per gli esami ufficiali di certificazione linguistica.",
-      specialties: ["TOPIK I & II", "Scrittura Formale", "Business Korean"]
+      bio: "With 10 years of academic teaching experience, Park prepares students for official language certification exams.",
+      specialties: ["TOPIK I & II", "Formal Writing", "Business Korean"]
     }
   ]
 
@@ -34,9 +34,9 @@ export default function Tutors() {
       <Navbar />
       <div className="pt-32 pb-20 px-4 bg-[#F8F9FC]">
         <div className="max-w-4xl mx-auto text-center mb-16">
-          <h1 className="text-4xl font-bold text-brand-dark mb-6">I Nostri Insegnanti</h1>
+          <h1 className="text-4xl font-bold text-brand-dark mb-6">Our Teachers</h1>
           <p className="text-xl text-gray-600">
-            Professionisti madrelingua certificati, pronti a guidarti passo dopo passo.
+            Certified native professionals, ready to guide you step by step.
           </p>
         </div>
 

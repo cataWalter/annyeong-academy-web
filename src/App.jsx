@@ -14,8 +14,11 @@ import NotFound from './pages/NotFound'
 
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
 
 import AppLayout from './components/layout/AppLayout'
+import AdminRoute from './components/auth/AdminRoute'
+
 import Dashboard from './pages/app/Dashboard'
 import Courses from './pages/app/Courses'
 import Store from './pages/app/Store'
@@ -35,7 +38,7 @@ const Wrapper = ({children}) => {
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth()
-  if (loading) return <div className="h-screen flex items-center justify-center">Caricamento...</div>
+  if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>
   if (!user) return <Navigate to="/login" />
   return children
 }
@@ -58,6 +61,7 @@ function App() {
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Protected App Routes */}
             <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -68,7 +72,11 @@ function App() {
               <Route path="downloads" element={<MyDownloads />} />
               <Route path="corsi/:id" element={<CoursePlayer />} />
               <Route path="lezioni-live" element={<LiveLessons />} />
-              <Route path="admin" element={<AdminDashboard />} />
+              
+              {/* Admin Routes Protected */}
+              <Route element={<AdminRoute />}>
+                <Route path="admin" element={<AdminDashboard />} />
+              </Route>
             </Route>
 
             {/* Catch All */}

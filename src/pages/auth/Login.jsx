@@ -1,7 +1,8 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Loader2 } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -13,9 +14,18 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
-    const { error } = await signIn({ email, password })
-    if (error) alert("Errore login: " + error.message)
-    else navigate('/dashboard')
+    const { data, error } = await signIn({ email, password })
+    
+    if (error) {
+      alert("Login error: " + error.message)
+    } else {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
+      if (profile?.role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
+    }
     setLoading(false)
   }
 
@@ -23,8 +33,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC] px-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full border-t-4 border-brand-purple">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-brand-dark">Bentornato! ðŸ‘‹</h1>
-          <p className="text-gray-500">Accedi alla tua area studenti</p>
+          <h1 className="text-2xl font-bold text-brand-dark">Welcome Back! 👋</h1>
+          <p className="text-gray-500">Access your student area</p>
         </div>
         
         <form onSubmit={handleLogin} className="space-y-4">
@@ -39,7 +49,10 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <Link to="/forgot-password" class="text-xs text-brand-purple font-bold hover:underline">Forgot?</Link>
+            </div>
             <input 
               type="password" 
               required
@@ -54,15 +67,15 @@ export default function Login() {
             type="submit" 
             className="w-full bg-brand-purple text-white font-bold py-3 rounded-lg hover:opacity-90 flex justify-center"
           >
-            {loading ? <Loader2 className="animate-spin" /> : "Accedi"}
+            {loading ? <Loader2 className="animate-spin" /> : "Login"}
           </button>
         </form>
 
         <p className="text-center mt-6 text-sm text-gray-600">
-          Non hai un account? <Link to="/register" className="text-brand-purple font-bold hover:underline">Registrati</Link>
+          Don't have an account? <Link to="/register" className="text-brand-purple font-bold hover:underline">Register</Link>
         </p>
         <p className="text-center mt-2 text-sm">
-          <Link to="/" className="text-gray-400 hover:text-gray-600">â† Torna alla Home</Link>
+          <Link to="/" className="text-gray-400 hover:text-gray-600">← Back to Home</Link>
         </p>
       </div>
     </div>
