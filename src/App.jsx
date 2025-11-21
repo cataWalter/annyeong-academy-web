@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { useLayoutEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ToastProvider } from './context/ToastContext'
+import { PaymentProvider } from './context/PaymentContext'
+import { LanguageProvider } from './context/LanguageContext'
 
 // Pages
 import LandingPage from './pages/LandingPage'
@@ -18,6 +21,8 @@ import ForgotPassword from './pages/auth/ForgotPassword'
 
 import AppLayout from './components/layout/AppLayout'
 import AdminRoute from './components/auth/AdminRoute'
+import SupabaseConfigWarning from './components/auth/SupabaseConfigWarning'
+import LegalNotice from "./components/ui/LegalNotice"
 
 import Dashboard from './pages/app/Dashboard'
 import Courses from './pages/app/Courses'
@@ -27,6 +32,8 @@ import LiveLessons from './pages/app/LiveLessons'
 import CoursePlayer from './pages/app/CoursePlayer'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import Profile from './pages/app/Profile'
+import Leaderboard from './pages/app/Leaderboard'
+import MyNotebook from './pages/app/MyNotebook'
 
 const Wrapper = ({children}) => {
   const location = useLocation();
@@ -45,46 +52,56 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Wrapper>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/termini" element={<TermsPage />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/tutors" element={<Tutors />} />
-            <Route path="/faq" element={<FAQ />} />
-            
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+    <LanguageProvider>
+      <SupabaseConfigWarning />
+      <ToastProvider>
+        <AuthProvider>
+          <PaymentProvider>
+            <BrowserRouter>
+              <Wrapper>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/termini" element={<TermsPage />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/tutors" element={<Tutors />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  
+                  {/* Auth Routes */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
 
-            {/* Protected App Routes */}
-            <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="corsi" element={<Courses />} />
-              <Route path="store" element={<Store />} />
-              <Route path="downloads" element={<MyDownloads />} />
-              <Route path="corsi/:id" element={<CoursePlayer />} />
-              <Route path="lezioni-live" element={<LiveLessons />} />
-              
-              {/* Admin Routes Protected */}
-              <Route element={<AdminRoute />}>
-                <Route path="admin" element={<AdminDashboard />} />
-              </Route>
-            </Route>
+                  {/* Protected App Routes */}
+                  <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="leaderboard" element={<Leaderboard />} />
+                    <Route path="notebook" element={<MyNotebook />} />
+                    <Route path="profile" element={<Profile />} />
+                    <Route path="corsi" element={<Courses />} />
+                    <Route path="store" element={<Store />} />
+                    <Route path="downloads" element={<MyDownloads />} />
+                    <Route path="corsi/:id" element={<CoursePlayer />} />
+                    <Route path="lezioni-live" element={<LiveLessons />} />
+                    
+                    {/* Admin Routes Protected */}
+                    <Route element={<AdminRoute />}>
+                      <Route path="admin" element={<AdminDashboard />} />
+                    </Route>
+                  </Route>
 
-            {/* Catch All */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Wrapper>
-      </BrowserRouter>
-    </AuthProvider>
+                  {/* Catch All */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <LegalNotice />
+              </Wrapper>
+            </BrowserRouter>
+          </PaymentProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </LanguageProvider>
   )
 }
 

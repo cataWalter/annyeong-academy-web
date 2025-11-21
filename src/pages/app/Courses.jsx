@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { Video, Loader2, PlayCircle, ShoppingCart } from 'lucide-react'
-import { initiateCheckout } from '../../lib/payment'
+import { usePayment } from '../../context/PaymentContext'
+import { useLanguage } from '../../context/LanguageContext'
+import { Video, Loader2, PlayCircle, ShoppingCart, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { cleanDescription } from '../../lib/helpers'
 
 export default function Courses() {
   const { user } = useAuth()
+  const { t } = useLanguage()
+  const { initiateCheckout } = usePayment()
   const [courses, setCourses] = useState([])
   const [purchasedIds, setPurchasedIds] = useState([])
   const [loading, setLoading] = useState(true)
+  
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filter, setFilter] = useState('all')
 
   useEffect(() => {
     fetchData()
@@ -38,21 +44,56 @@ export default function Courses() {
     }
   }
 
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase())
+    const isOwned = purchasedIds.includes(course.id)
+    
+    if (filter === 'owned' && !isOwned) return false
+    if (filter === 'not_owned' && isOwned) return false
+    
+    return matchesSearch
+  })
+
   if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple" /></div>
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-brand-dark mb-2">Course Catalog</h1>
-      <p className="text-gray-500 mb-8">Choose between live courses or video on-demand.</p>
+      <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-brand-dark mb-2">{t('course_catalog')}</h1>
+          <p className="text-gray-500">{t('course_desc')}</p>
+        </div>
+        <div className="flex gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input 
+              type="text" 
+              placeholder={t('course_search')}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-brand-purple"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select 
+            className="px-4 py-2 border border-gray-200 rounded-xl outline-none bg-white text-gray-600 text-sm font-bold"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            <option value="all">{t('course_filter_all')}</option>
+            <option value="owned">{t('course_filter_owned')}</option>
+            <option value="not_owned">{t('course_filter_not')}</option>
+          </select>
+        </div>
+      </div>
 
-      {courses.length === 0 && (
-        <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-300">
-          <p className="text-gray-500">No courses available at the moment.</p>
+      {filteredCourses.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
+          <p className="text-gray-500 font-medium">{t('course_no_results')}</p>
         </div>
       )}
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map(course => {
+        {filteredCourses.map(course => {
           const isOwned = purchasedIds.includes(course.id)
 
           return (
@@ -78,16 +119,16 @@ export default function Courses() {
                        to={`/corsi/${course.id}`}
                        className="w-full bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition flex items-center justify-center gap-2"
                      >
-                       <PlayCircle size={16} /> Access Course
+                       <PlayCircle size={16} /> {t('course_access')}
                      </Link>
                   ) : (
                     <>
-                      <span className="text-2xl font-bold text-brand-purple">{course.price} Ft</span>
+                      <span className="text-2xl font-bold text-brand-purple">{course.price}</span>
                       <button 
-                        onClick={() => initiateCheckout(course.id, course.title)}
+                        onClick={() => initiateCheckout(course)}
                         className="bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition flex items-center gap-2"
                       >
-                        <ShoppingCart size={16}/> Enroll
+                        <ShoppingCart size={16}/> {t('course_enroll')}
                       </button>
                     </>
                   )}

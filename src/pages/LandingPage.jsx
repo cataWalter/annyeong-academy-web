@@ -6,8 +6,10 @@ import Offer from '../components/sections/Offer'
 import Testimonials from '../components/sections/Testimonials'
 import Footer from '../components/sections/Footer'
 import WebinarForm from '../components/WebinarForm'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function LandingPage() {
+  const { t } = useLanguage()
   return (
     <div className="min-h-screen bg-[#F8F9FC] font-sans text-gray-800">
       <Navbar />
@@ -17,27 +19,27 @@ export default function LandingPage() {
           
           <div className="space-y-6 text-center lg:text-left">
             <span className="inline-flex items-center gap-2 py-1 px-4 rounded-full bg-white shadow-sm text-brand-purple text-sm font-bold border border-purple-100">
-              <span>⭐⭐⭐⭐⭐</span> Join +500 students
+              <span>⭐⭐⭐⭐⭐</span> +500 students
             </span>
             
             <h1 className="text-4xl md:text-6xl font-extrabold text-brand-dark leading-tight">
-              Learn Korean <br/>
+              {t('hero_title')} <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-purple">
-                Without English!
+                {t('hero_subtitle')}
               </span>
             </h1>
             
             <p className="text-lg text-gray-600 max-w-xl mx-auto lg:mx-0">
-              Join the interactive cultural evening. Try live AI translation and learn from native speakers directly from Seoul.
+              {t('hero_desc')}
             </p>
 
             <div className="flex flex-wrap justify-center lg:justify-start gap-4 pt-4">
               <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Spots filling up
+                {t('hero_spots')}
               </div>
               <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
-                <span>📹</span> Live on Zoom
+                <span>📹</span> {t('hero_live')}
               </div>
             </div>
           </div>
@@ -67,20 +69,6 @@ export default function LandingPage() {
       <Offer />
       <Testimonials />
       
-      <section className="py-20 bg-brand-dark text-white text-center px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-        <div className="max-w-3xl mx-auto relative z-10">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Don't miss this unique experience</h2>
-          <p className="text-gray-300 mb-8 text-lg">Zoom spots are limited to ensure interactivity.</p>
-          <button 
-            onClick={() => document.getElementById('registration').scrollIntoView({ behavior: 'smooth' })}
-            className="inline-block bg-gradient-to-r from-brand-blue to-brand-purple px-10 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-purple-500/50 hover:-translate-y-1 transition transform"
-          >
-            Register Free Now
-          </button>
-        </div>
-      </section>
-
       <Footer />
     </div>
   )

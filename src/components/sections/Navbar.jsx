@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react'
+import { Menu, X, LogIn, LayoutDashboard, Globe } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../context/LanguageContext'
 
 export default function Navbar() {
   const { user } = useAuth()
+  const { t, lang, toggleLanguage } = useLanguage()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
@@ -18,17 +20,13 @@ export default function Navbar() {
 
   const scrollToForm = async () => {
     setMobileMenuOpen(false)
-    
-    // If not on home page, go there first
     if (location.pathname !== '/') {
       await navigate('/')
-      // Small timeout to allow page load before scrolling
       setTimeout(() => {
         const form = document.getElementById('registration')
         if (form) form.scrollIntoView({ behavior: 'smooth' })
       }, 100)
     } else {
-      // Already on home page
       const form = document.getElementById('registration')
       if (form) form.scrollIntoView({ behavior: 'smooth' })
     }
@@ -45,19 +43,24 @@ export default function Navbar() {
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
-          <Link to="/about" className="text-gray-600 hover:text-brand-purple font-medium transition">About Us</Link>
-          <Link to="/tutors" className="text-gray-600 hover:text-brand-purple font-medium transition">Teachers</Link>
+          <Link to="/about" className="text-gray-600 hover:text-brand-purple font-medium transition">{t('nav_about')}</Link>
+          <Link to="/tutors" className="text-gray-600 hover:text-brand-purple font-medium transition">{t('nav_tutors')}</Link>
           
+          {/* Language Toggle */}
+          <button onClick={toggleLanguage} className="flex items-center gap-1 text-sm font-bold text-gray-500 hover:text-brand-dark uppercase">
+            <Globe size={16} /> {lang}
+          </button>
+
           <div className="h-6 w-px bg-gray-300"></div>
           
           {user ? (
             <Link to="/dashboard" className="flex items-center gap-2 text-brand-dark font-bold hover:text-brand-purple transition">
               <div className="bg-brand-purple text-white p-1 rounded-md"><LayoutDashboard size={16} /></div>
-              Dashboard
+              {t('nav_dashboard')}
             </Link>
           ) : (
             <Link to="/login" className="flex items-center gap-2 text-brand-dark font-bold hover:text-brand-purple transition">
-              <LogIn size={18} /> Login
+              <LogIn size={18} /> {t('nav_login')}
             </Link>
           )}
           
@@ -76,16 +79,20 @@ export default function Navbar() {
 
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 w-full bg-white border-t border-gray-100 shadow-xl p-6 flex flex-col gap-4">
-          <Link to="/about" className="text-lg font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
-          <Link to="/tutors" className="text-lg font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Teachers</Link>
+          <Link to="/about" className="text-lg font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>{t('nav_about')}</Link>
+          <Link to="/tutors" className="text-lg font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>{t('nav_tutors')}</Link>
           
+          <button onClick={toggleLanguage} className="flex items-center gap-2 text-lg font-medium text-gray-700 justify-start">
+            <Globe size={20} /> Switch to {lang === 'en' ? 'Hungarian' : 'English'}
+          </button>
+
           {user ? (
              <Link to="/dashboard" className="text-lg font-bold text-brand-purple flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-                <LayoutDashboard size={20} /> Dashboard
+                <LayoutDashboard size={20} /> {t('nav_dashboard')}
              </Link>
           ) : (
              <Link to="/login" className="text-lg font-bold text-brand-dark flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
-                <LogIn size={20} /> Login
+                <LogIn size={20} /> {t('nav_login')}
              </Link>
           )}
 

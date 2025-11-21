@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { Loader2 } from 'lucide-react'
 
 const AuthContext = createContext()
 
@@ -10,13 +11,7 @@ export function AuthProvider({ children }) {
 
   const fetchProfile = async (userId) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      
-      if (error && error.code !== 'PGRST116') console.error(error)
+      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
       setProfile(data)
     } catch (error) {
       console.error('Profile fetch error:', error)
@@ -24,13 +19,9 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    // Initialize Auth Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // console.log("Auth Event:", event, session?.user?.email)
-      
       if (session?.user) {
         setUser(session.user)
-        // Only fetch profile if user changed or profile missing
         if (!profile || profile.id !== session.user.id) {
             await fetchProfile(session.user.id)
         }
@@ -38,7 +29,6 @@ export function AuthProvider({ children }) {
         setUser(null)
         setProfile(null)
       }
-      
       setLoading(false)
     })
 
@@ -58,9 +48,19 @@ export function AuthProvider({ children }) {
     loading
   }
 
+  // Show a spinner while checking auth status
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-white text-brand-purple">
+        <Loader2 size={48} className="animate-spin mb-4" />
+        <p className="font-bold text-lg">Loading Academy...</p>
+      </div>
+    )
+  }
+
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   )
 }

@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { usePayment } from '../../context/PaymentContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { Link } from 'react-router-dom'
 import { ShoppingBag, Loader2, Download, Check } from 'lucide-react'
-import { initiateCheckout } from '../../lib/payment'
 import { cleanDescription } from '../../lib/helpers'
 
 export default function Store() {
   const { user } = useAuth()
+  const { t } = useLanguage()
+  const { initiateCheckout } = usePayment()
   const [products, setProducts] = useState([])
   const [purchasedIds, setPurchasedIds] = useState([])
   const [loading, setLoading] = useState(true)
@@ -35,8 +38,8 @@ export default function Store() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-brand-dark mb-2">Digital Store</h1>
-      <p className="text-gray-500 mb-8">Ebooks, Planners, and Downloadable Resources.</p>
+      <h1 className="text-2xl font-bold text-brand-dark mb-2">{t('store_title')}</h1>
+      <p className="text-gray-500 mb-8">{t('store_desc')}</p>
 
       <div className="grid md:grid-cols-3 gap-6">
         {products.map(product => {
@@ -53,11 +56,11 @@ export default function Store() {
                 <p className="text-sm text-gray-500 mb-4 line-clamp-2 flex-1">{cleanDescription(product.description)}</p>
                 <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                   {isOwned ? (
-                    <Link to="/downloads" className="w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 border border-green-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-100 transition"><Download size={16} /> Go to Downloads</Link>
+                    <Link to="/downloads" className="w-full flex items-center justify-center gap-2 bg-green-50 text-green-700 border border-green-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-100 transition"><Download size={16} /> {t('store_download')}</Link>
                   ) : (
                     <>
-                      <span className="text-xl font-bold text-brand-purple">{product.price} Ft</span>
-                      <button onClick={() => initiateCheckout(product.id, product.title)} className="flex items-center gap-2 bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition shadow-md"><ShoppingBag size={16} /> Buy</button>
+                      <span className="text-xl font-bold text-brand-purple">{product.price}</span>
+                      <button onClick={() => initiateCheckout(product)} className="flex items-center gap-2 bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition shadow-md"><ShoppingBag size={16} /> {t('store_buy')}</button>
                     </>
                   )}
                 </div>

@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { useLanguage } from '../../context/LanguageContext'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const { signIn } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
 
   const handleLogin = async (e) => {
@@ -33,13 +35,13 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FC] px-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full border-t-4 border-brand-purple">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-brand-dark">Welcome Back! 👋</h1>
-          <p className="text-gray-500">Access your student area</p>
+          <h1 className="text-2xl font-bold text-brand-dark">{t('auth_welcome')} 👋</h1>
+          <p className="text-gray-500">{t('auth_access')}</p>
         </div>
         
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth_email')}</label>
             <input 
               type="email" 
               required
@@ -50,8 +52,8 @@ export default function Login() {
           </div>
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <Link to="/forgot-password" class="text-xs text-brand-purple font-bold hover:underline">Forgot?</Link>
+              <label className="block text-sm font-medium text-gray-700">{t('auth_password')}</label>
+              <Link to="/forgot-password" class="text-xs text-brand-purple font-bold hover:underline">{t('auth_forgot')}</Link>
             </div>
             <input 
               type="password" 
@@ -67,15 +69,12 @@ export default function Login() {
             type="submit" 
             className="w-full bg-brand-purple text-white font-bold py-3 rounded-lg hover:opacity-90 flex justify-center"
           >
-            {loading ? <Loader2 className="animate-spin" /> : "Login"}
+            {loading ? <Loader2 className="animate-spin" /> : t('auth_login')}
           </button>
         </form>
 
         <p className="text-center mt-6 text-sm text-gray-600">
-          Don't have an account? <Link to="/register" className="text-brand-purple font-bold hover:underline">Register</Link>
-        </p>
-        <p className="text-center mt-2 text-sm">
-          <Link to="/" className="text-gray-400 hover:text-gray-600">← Back to Home</Link>
+          {t('auth_no_account')} <Link to="/register" className="text-brand-purple font-bold hover:underline">{t('auth_register')}</Link>
         </p>
       </div>
     </div>
