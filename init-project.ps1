@@ -1,70 +1,98 @@
-# fix-agenda.ps1
+import { useEffect, useState } from 'react'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
+import { Calendar, Loader2, Users, Video, Lock } from 'lucide-react'
+import { initiateCheckout } from '../../lib/payment'
 
-Write-Host "🔧 RIPARAZIONE AGENDA.JSX..." -ForegroundColor Cyan
+export default function LiveLessons() {
+  const { user } = useAuth()
+  const [lessons, setLessons] = useState([])
+  const [purchasedIds, setPurchasedIds] = useState([])
+  const [loading, setLoading] = useState(true)
 
-$Agenda = @"
-import Section from '../ui/Section'
-import { Clock, CheckCircle2 } from 'lucide-react'
+  useEffect(() => {
+    fetchData()
+  }, [user])
 
-export default function Agenda() {
-  const timeline = [
-    { time: '18:00', title: 'Immersione Culturale (Intro)', desc: 'Conosci gli insegnanti, setup tecnologia e introduzione culturale.' },
-    { time: '18:15', title: 'La Mini-Lezione (La Prova)', desc: 'Impariamo il primo dialogo reale. Testiamo la traduzione AI dal vivo.' },
-    { time: '18:45', title: 'Q&A e Regali Esclusivi', desc: "Rispondiamo alle domande. Ogni partecipante riceve il PDF 'Survival Vocabulary'." }
-  ]
+  const fetchData = async () => {
+    try {
+      // 1. Fetch Lessons
+      const { data: products } = await supabase.from('products').select('*').eq('type', 'standalone')
+      setLessons(products || [])
+
+      // 2. Fetch Purchases
+      if (user) {
+        const { data: purchases } = await supabase.from('purchases')
+          .select('product_id').eq('user_id', user.id).eq('status', 'completed')
+        if (purchases) setPurchasedIds(purchases.map(p => p.product_id))
+      }
+    } catch (error) { console.error(error) } 
+    finally { setLoading(false) }
+  }
+
+  if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple" /></div>
 
   return (
-    <Section className="bg-white">
-      <div className="grid md:grid-cols-2 gap-16">
-        {/* Timeline */}
-        <div>
-          <h2 className="text-3xl font-bold text-brand-dark mb-8">L'Agenda della Serata</h2>
-          <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:h-full before:w-0.5 before:bg-gray-200">
-            {timeline.map((item, i) => (
-              <div key={i} className="relative pl-12">
-                <div className="absolute left-0 top-1 w-8 h-8 bg-white border-2 border-brand-purple rounded-full flex items-center justify-center z-10">
-                  <div className="w-3 h-3 bg-brand-purple rounded-full"></div>
-                </div>
-                <span className="text-brand-purple font-bold text-sm">{item.time}</span>
-                <h3 className="text-xl font-bold text-brand-dark">{item.title}</h3>
-                <p className="text-gray-600 mt-1">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div>
+      <h1 className="text-2xl font-bold text-brand-dark mb-2">Lezioni Live Singole</h1>
+      <p className="text-gray-500 mb-8">Prenota una sessione one-shot per praticare.</p>
 
-        {/* FAQ Rapide */}
-        <div>
-          <h2 className="text-3xl font-bold text-brand-dark mb-8">Domande Frequenti</h2>
-          <div className="space-y-4">
-            <details className="group bg-gray-50 p-4 rounded-xl cursor-pointer open:bg-purple-50 transition">
-              <summary className="font-bold text-brand-dark list-none flex justify-between items-center">
-                Serve installare software?
-                <span className="text-brand-purple group-open:rotate-180 transition">▼</span>
-              </summary>
-              <p className="text-gray-600 mt-3 text-sm">No. Riceverai un link Zoom standard. Puoi aprirlo nel browser o nell'app.</p>
-            </details>
-            <details className="group bg-gray-50 p-4 rounded-xl cursor-pointer open:bg-purple-50 transition">
-              <summary className="font-bold text-brand-dark list-none flex justify-between items-center">
-                Devo accendere la telecamera?
-                <span className="text-brand-purple group-open:rotate-180 transition">▼</span>
-              </summary>
-              <p className="text-gray-600 mt-3 text-sm">Assolutamente no. Puoi partecipare come spettatore con audio e video spenti.</p>
-            </details>
-            <details className="group bg-gray-50 p-4 rounded-xl cursor-pointer open:bg-purple-50 transition">
-              <summary className="font-bold text-brand-dark list-none flex justify-between items-center">
-                Parto da zero, posso venire?
-                <span className="text-brand-purple group-open:rotate-180 transition">▼</span>
-              </summary>
-              <p className="text-gray-600 mt-3 text-sm">Sì! Questo evento è progettato specificamente per chi non ha mai studiato coreano.</p>
-            </details>
-          </div>
-        </div>
+      <div className="space-y-4">
+        {lessons.map(lesson => {
+          const isPurchased = purchasedIds.includes(lesson.id)
+          
+          return (
+            <div key={lesson.id} className={`bg-white rounded-2xl p-8 border transition ${isPurchased ? 'border-green-200 bg-green-50/30' : 'border-gray-100 shadow-sm hover:shadow-md'}`}>
+              <div className="flex flex-col md:flex-row gap-6 items-center">
+                <div className={`p-4 rounded-2xl ${isPurchased ? 'bg-green-100 text-green-600' : 'bg-purple-50 text-brand-purple'}`}>
+                  <Calendar className="w-12 h-12" />
+                </div>
+                
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-xl font-bold text-brand-dark mb-2">{lesson.title}</h3>
+                  <p className="text-gray-600 mb-4">{lesson.description}</p>
+                  <div className="flex justify-center md:justify-start gap-4 text-sm font-medium text-gray-500">
+                    <span className="flex items-center gap-1"><Users size={16}/> Gruppo Piccolo</span>
+                    {isPurchased && <span className="flex items-center gap-1 text-green-600"><Lock size={14} className="text-green-600"/> Accesso Sbloccato</span>}
+                  </div>
+                </div>
+                
+                <div className="text-center min-w-[160px]">
+                  {isPurchased ? (
+                    <div className="space-y-2">
+                      <div className="text-sm font-bold text-green-600 mb-2">PRENOTATO ✅</div>
+                      {lesson.content_url ? (
+                        <a 
+                          href={lesson.content_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="block w-full bg-green-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-green-700 transition flex items-center justify-center gap-2"
+                        >
+                          <Video size={18} /> Entra in Zoom
+                        </a>
+                      ) : (
+                        <button disabled className="w-full bg-gray-200 text-gray-500 px-4 py-3 rounded-lg font-bold cursor-not-allowed text-xs">
+                          Link in arrivo...
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-brand-purple mb-2">{lesson.price} Ft</div>
+                      <button 
+                        onClick={() => initiateCheckout(lesson.id, lesson.title)}
+                        className="w-full bg-brand-blue text-white px-4 py-2 rounded-lg font-bold hover:opacity-90 transition"
+                      >
+                        Prenota
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })}
       </div>
-    </Section>
+    </div>
   )
 }
-"@
-
-Set-Content -Path "src/components/sections/Agenda.jsx" -Value $Agenda -Encoding UTF8
-Write-Host "✅ File Agenda riparato! Rilancia il server." -ForegroundColor Green

@@ -1,15 +1,30 @@
 ﻿import { useState } from 'react'
 import Navbar from '../components/sections/Navbar'
 import Footer from '../components/sections/Footer'
-import { Mail, MapPin, Phone } from 'lucide-react'
+import { Mail, MapPin, Phone, Loader2 } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 export default function Contact() {
   const [sent, setSent] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' })
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    setSent(true)
-    // Qui integreresti Supabase insert
+    setLoading(true)
+    
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert([formData])
+        
+      if (error) throw error
+      setSent(true)
+    } catch (error) {
+      alert("Errore nell'invio: " + error.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -53,18 +68,40 @@ export default function Contact() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-                  <input required type="text" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none" />
+                  <input 
+                    required 
+                    type="text" 
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none"
+                    value={formData.name}
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input required type="email" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none" />
+                  <input 
+                    required 
+                    type="email" 
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none"
+                    value={formData.email}
+                    onChange={e => setFormData({...formData, email: e.target.value})}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Messaggio</label>
-                  <textarea required rows="4" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none"></textarea>
+                  <textarea 
+                    required 
+                    rows="4" 
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none"
+                    value={formData.message}
+                    onChange={e => setFormData({...formData, message: e.target.value})}
+                  ></textarea>
                 </div>
-                <button type="submit" className="w-full bg-brand-dark text-white font-bold py-3 rounded-xl hover:opacity-90 transition">
-                  Invia Messaggio
+                <button 
+                  disabled={loading}
+                  type="submit" 
+                  className="w-full bg-brand-dark text-white font-bold py-3 rounded-xl hover:opacity-90 transition flex justify-center"
+                >
+                  {loading ? <Loader2 className="animate-spin" /> : "Invia Messaggio"}
                 </button>
               </form>
             )}

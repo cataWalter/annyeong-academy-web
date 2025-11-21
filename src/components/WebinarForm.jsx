@@ -25,7 +25,6 @@ export default function WebinarForm() {
     setLoading(false)
 
     if (error) {
-      // Usa doppi apici per evitare errori di escaping
       alert("Errore durante l'iscrizione: " + error.message)
     } else {
       setSuccess(true)
@@ -72,8 +71,8 @@ export default function WebinarForm() {
           value={formData.webinar_date}
           onChange={e => setFormData({...formData, webinar_date: e.target.value})}
         >
-          <option value="Dec 6">6 Dicembre - 18:00</option>
-          <option value="Dec 7">7 Dicembre - 18:00</option>
+          <option value="Dec 6">6 Dicembre - 18:00 (VenerdÃ¬)</option>
+          <option value="Dec 7">7 Dicembre - 18:00 (Sabato)</option>
         </select>
       </div>
 
@@ -87,14 +86,14 @@ export default function WebinarForm() {
           onChange={e => setFormData({...formData, gdpr_consent: e.target.checked})}
         />
         <label htmlFor="gdpr" className="text-sm text-gray-600">
-          Accetto la <a href="#" className="text-brand-purple underline">Privacy Policy</a>.
+          Accetto la <a href="/privacy" target="_blank" className="text-brand-purple underline">Privacy Policy</a> e il trattamento dati.
         </label>
       </div>
 
       <button 
         disabled={loading}
         type="submit" 
-        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 rounded-full hover:opacity-90 disabled:opacity-50 flex justify-center items-center"
+        className="w-full bg-gradient-to-r from-brand-blue to-brand-purple text-white font-bold py-3 rounded-full hover:opacity-90 disabled:opacity-50 flex justify-center items-center shadow-lg hover:shadow-xl transition"
       >
         {loading ? <Loader2 className="animate-spin mr-2" /> : "Prenota il mio posto GRATIS"}
       </button>
