@@ -68,7 +68,7 @@ export default function Navbar() {
             onClick={scrollToForm}
             className="px-6 py-2 bg-brand-dark text-white rounded-full font-semibold hover:bg-gray-800 transition shadow-lg hover:shadow-xl"
           >
-            Book Webinar
+            {t('nav_book')}
           </button>
         </div>
 
@@ -100,7 +100,7 @@ export default function Navbar() {
             onClick={scrollToForm}
             className="w-full py-3 bg-brand-dark text-white rounded-xl font-bold mt-2"
           >
-            Book Webinar
+            {t('nav_book')}
           </button>
         </div>
       )}

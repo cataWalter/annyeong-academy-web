@@ -19,7 +19,7 @@ export default function LandingPage() {
           
           <div className="space-y-6 text-center lg:text-left">
             <span className="inline-flex items-center gap-2 py-1 px-4 rounded-full bg-white shadow-sm text-brand-purple text-sm font-bold border border-purple-100">
-              <span>⭐⭐⭐⭐⭐</span> +500 students
+              <span>⭐⭐⭐⭐⭐</span> {t('hero_students')}
             </span>
             
             <h1 className="text-4xl md:text-6xl font-extrabold text-brand-dark leading-tight">
@@ -54,7 +54,7 @@ export default function LandingPage() {
       </section>
 
       <div className="py-8 border-y border-gray-200 bg-white/50 backdrop-blur text-center">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">Powered by Technology</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">{t('hero_powered')}</p>
         <div className="flex flex-wrap justify-center gap-8 md:gap-16 text-gray-400 font-bold text-sm">
           <span>📹 ZOOM HD</span>
           <span>🤖 AI LIVE TRANSLATE</span>

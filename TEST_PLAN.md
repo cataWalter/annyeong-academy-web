@@ -144,7 +144,7 @@ Before testing, ensure:
 ---
 
 ## 7. 🐛 Technical & Edge Cases
-- [ ] **AdBlocker Test**: Enable uBlock Origin / AdBlock Plus. Refresh. **Ensure the page does NOT crash** (White screen test).
+- [x] **AdBlocker Test**: Enable uBlock Origin / AdBlock Plus. Refresh. **Ensure the page does NOT crash** (White screen test).
 - [ ] **Mobile View**: Open Chrome DevTools (F12) -> Toggle Device Toolbar (Mobile).
     -   Check Hamburger menu functionality.
     -   Check Video Player responsiveness.

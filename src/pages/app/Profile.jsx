@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { supabase } from '../../lib/supabase'
-import { User, Save, Loader2, Camera, Lock, CheckCircle, FileText, Download } from 'lucide-react'
+import { User, Save, Loader2, Camera, Lock, FileText, Download } from 'lucide-react'
 import { generateFilePath } from '../../lib/helpers'
 import { generateInvoice } from '../../utils/invoiceGenerator'
 
@@ -12,17 +12,14 @@ export default function Profile() {
   const [loading, setLoading] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
   
-  // Profile State
   const [fullName, setFullName] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [uploading, setUploading] = useState(false)
 
-  // Password State
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordMsg, setPasswordMsg] = useState('')
 
-  // Order History
   const [orders, setOrders] = useState([])
 
   useEffect(() => {
@@ -102,7 +99,6 @@ export default function Profile() {
       <p className="text-gray-500 mb-8">{t('prof_desc')}</p>
 
       <div className="grid gap-8">
-        {/* 1. Personal Info */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-blue to-brand-purple"></div>
           <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
@@ -134,7 +130,6 @@ export default function Profile() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
-          {/* 2. Security */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 h-fit">
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-gray-100 p-2 rounded-lg text-gray-600"><Lock size={20} /></div>
@@ -156,7 +151,6 @@ export default function Profile() {
             </form>
           </div>
 
-          {/* 3. Order History */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 h-fit">
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-blue-50 p-2 rounded-lg text-brand-blue"><FileText size={20} /></div>

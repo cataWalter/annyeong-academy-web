@@ -1,13 +1,15 @@
 import Section from '../ui/Section'
+import { useLanguage } from '../../context/LanguageContext'
 
 export default function Teachers() {
+  const { t } = useLanguage()
   return (
     <Section className="bg-[#F8F9FC]">
       <div className="text-center mb-16">
         <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-4">
-          Your Native Teachers
+          {t('teacher_title')}
         </h2>
-        <p className="text-gray-600">Live from Seoul to guide you.</p>
+        <p className="text-gray-600">{t('teacher_subtitle')}</p>
       </div>
 
       <div className="flex flex-wrap justify-center gap-8">
@@ -20,9 +22,9 @@ export default function Teachers() {
             />
           </div>
           <h3 className="text-2xl font-bold text-brand-dark">Kim Seon-saeng-nim</h3>
-          <span className="text-sm font-bold text-brand-purple uppercase tracking-wider block mb-4">Beginner Specialist</span>
+          <span className="text-sm font-bold text-brand-purple uppercase tracking-wider block mb-4">{t('teacher_kim_role')}</span>
           <p className="text-gray-600">
-            Kim loves introducing beginners to the language with energy and patience. A fan of Seoul's cafe culture.
+            {t('teacher_kim_bio')}
           </p>
         </div>
 
@@ -35,9 +37,9 @@ export default function Teachers() {
             />
           </div>
           <h3 className="text-2xl font-bold text-brand-dark">Lee Seon-saeng-nim</h3>
-          <span className="text-sm font-bold text-brand-blue uppercase tracking-wider block mb-4">Pronunciation Coach</span>
+          <span className="text-sm font-bold text-brand-blue uppercase tracking-wider block mb-4">{t('teacher_lee_role')}</span>
           <p className="text-gray-600">
-            Focuses on clean pronunciation and cultural nuances. He is a big foodie and knows the best restaurants.
+            {t('teacher_lee_bio')}
           </p>
         </div>
       </div>

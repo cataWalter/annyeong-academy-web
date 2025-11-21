@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { Trophy, Medal, User, Loader2, Crown } from 'lucide-react'
 import SEO from '../../components/seo/SEO'
 
 export default function Leaderboard() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -15,7 +17,6 @@ export default function Leaderboard() {
 
   const fetchLeaderboard = async () => {
     try {
-      // Join user_stats with profiles
       const { data, error } = await supabase
         .from('user_stats')
         .select('xp, streak, user_id, profiles(full_name, avatar_url)')
@@ -40,9 +41,9 @@ export default function Leaderboard() {
       <div className="text-center mb-10">
         <h1 className="text-3xl font-bold text-brand-dark flex items-center justify-center gap-3">
           <Trophy className="text-yellow-500 fill-yellow-500" size={32} /> 
-          Hall of Fame
+          {t('leader_title')}
         </h1>
-        <p className="text-gray-500 mt-2">Top students this month. Keep learning to rise up!</p>
+        <p className="text-gray-500 mt-2">{t('leader_desc')}</p>
       </div>
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">

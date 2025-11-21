@@ -1,30 +1,32 @@
 import Navbar from '../components/sections/Navbar'
 import Footer from '../components/sections/Footer'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function Tutors() {
+  const { t } = useLanguage()
   const tutors = [
     {
       id: 1,
       name: "Kim Seon-saeng-nim",
-      role: "Head of Dept & Beginners",
+      role: t('tutor_1_role'),
       image: "https://placehold.co/300x300/6a11cb/ffffff?text=Kim",
-      bio: "Graduated in linguistics from Seoul National University. Kim developed our 'Direct-Translation' method to allow students to learn without English.",
+      bio: t('tutor_1_bio'),
       specialties: ["Basic Grammar", "Korean Culture", "K-Pop"]
     },
     {
       id: 2,
       name: "Lee Seon-saeng-nim",
-      role: "Pronunciation & Conversation",
+      role: t('tutor_2_role'),
       image: "https://placehold.co/300x300/2575fc/ffffff?text=Lee",
-      bio: "Former theater actor, Lee specializes in teaching perfect intonation and standard Seoul pronunciation. His lessons are always full of energy.",
+      bio: t('tutor_2_bio'),
       specialties: ["Speaking", "Acting", "Slang"]
     },
     {
       id: 3,
       name: "Park Seon-saeng-nim",
-      role: "TOPIK Preparation",
+      role: t('tutor_3_role'),
       image: "https://placehold.co/300x300/ff9900/ffffff?text=Park",
-      bio: "With 10 years of academic teaching experience, Park prepares students for official language certification exams.",
+      bio: t('tutor_3_bio'),
       specialties: ["TOPIK I & II", "Formal Writing", "Business Korean"]
     }
   ]
@@ -34,9 +36,9 @@ export default function Tutors() {
       <Navbar />
       <div className="pt-32 pb-20 px-4 bg-[#F8F9FC]">
         <div className="max-w-4xl mx-auto text-center mb-16">
-          <h1 className="text-4xl font-bold text-brand-dark mb-6">Our Teachers</h1>
+          <h1 className="text-4xl font-bold text-brand-dark mb-6">{t('tutors_title')}</h1>
           <p className="text-xl text-gray-600">
-            Certified native professionals, ready to guide you step by step.
+            {t('tutors_desc')}
           </p>
         </div>
 

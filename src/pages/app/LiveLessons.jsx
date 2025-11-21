@@ -62,7 +62,6 @@ export default function LiveLessons() {
               )}
 
               <div className="flex flex-col md:flex-row gap-6 items-center">
-                {/* Date Box */}
                 <div className={`p-4 rounded-2xl flex-shrink-0 w-full md:w-24 text-center ${isPurchased ? 'bg-green-100 text-green-600' : 'bg-purple-50 text-brand-purple'}`}>
                   {eventDate ? (
                     <>
@@ -73,7 +72,7 @@ export default function LiveLessons() {
                   ) : (
                     <div className="flex flex-col items-center py-2">
                       <Calendar size={32} />
-                      <span className="text-xs font-bold mt-2">TBA</span>
+                      <span className="text-xs font-bold mt-2">{t('live_tba')}</span>
                     </div>
                   )}
                 </div>

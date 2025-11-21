@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { CheckCircle, XCircle, RefreshCw, Trophy } from 'lucide-react'
 import confetti from 'canvas-confetti'
+import { useLanguage } from '../../context/LanguageContext'
 
 export default function QuizTaker({ quizData, onComplete }) {
+  const { t } = useLanguage()
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [score, setScore] = useState(0)
   const [showScore, setShowScore] = useState(false)
@@ -14,7 +16,6 @@ export default function QuizTaker({ quizData, onComplete }) {
   const handleAnswer = (optionIndex) => {
     setSelectedOption(optionIndex)
     setIsAnswered(true)
-    
     if (optionIndex === quizData[currentQuestion].correct) {
       setScore(score + 1)
       confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } })
@@ -47,13 +48,10 @@ export default function QuizTaker({ quizData, onComplete }) {
         <div className="w-20 h-20 mx-auto bg-gray-50 rounded-full flex items-center justify-center mb-4">
           <Trophy size={40} className={passed ? "text-yellow-500" : "text-gray-400"} />
         </div>
-        <h3 className="text-2xl font-bold text-brand-dark mb-2">Quiz Completed!</h3>
-        <p className="text-gray-500 mb-6">You scored {score} out of {quizData.length}</p>
-        <button 
-          onClick={restart}
-          className="bg-brand-purple text-white px-6 py-2 rounded-xl font-bold hover:opacity-90 transition flex items-center gap-2 mx-auto"
-        >
-          <RefreshCw size={18} /> Retry Quiz
+        <h3 className="text-2xl font-bold text-brand-dark mb-2">{t('quiz_completed')}</h3>
+        <p className="text-gray-500 mb-6">{t('quiz_scored')} {score} / {quizData.length}</p>
+        <button onClick={restart} className="bg-brand-purple text-white px-6 py-2 rounded-xl font-bold hover:opacity-90 transition flex items-center gap-2 mx-auto">
+          <RefreshCw size={18} /> {t('quiz_retry')}
         </button>
       </div>
     )
@@ -65,9 +63,9 @@ export default function QuizTaker({ quizData, onComplete }) {
     <div className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <span className="text-xs font-bold text-brand-purple uppercase tracking-wider">
-          Question {currentQuestion + 1} / {quizData.length}
+          {t('quiz_question')} {currentQuestion + 1} / {quizData.length}
         </span>
-        <span className="text-xs font-bold text-gray-400">Score: {score}</span>
+        <span className="text-xs font-bold text-gray-400">{t('quiz_score')}: {score}</span>
       </div>
 
       <h3 className="text-xl font-bold text-brand-dark mb-6">{question.question}</h3>
@@ -75,7 +73,6 @@ export default function QuizTaker({ quizData, onComplete }) {
       <div className="space-y-3 mb-8">
         {question.options.map((option, index) => {
           let btnClass = "w-full p-4 text-left rounded-xl border-2 transition font-medium "
-          
           if (isAnswered) {
             if (index === question.correct) btnClass += "border-green-500 bg-green-50 text-green-700"
             else if (index === selectedOption) btnClass += "border-red-500 bg-red-50 text-red-700"
@@ -85,12 +82,7 @@ export default function QuizTaker({ quizData, onComplete }) {
           }
 
           return (
-            <button 
-              key={index}
-              disabled={isAnswered}
-              onClick={() => handleAnswer(index)}
-              className={btnClass}
-            >
+            <button key={index} disabled={isAnswered} onClick={() => handleAnswer(index)} className={btnClass}>
               <div className="flex items-center justify-between">
                 <span>{option}</span>
                 {isAnswered && index === question.correct && <CheckCircle size={20} className="text-green-500"/>}
@@ -103,11 +95,8 @@ export default function QuizTaker({ quizData, onComplete }) {
 
       {isAnswered && (
         <div className="flex justify-end">
-          <button 
-            onClick={handleNext}
-            className="bg-brand-dark text-white px-8 py-3 rounded-xl font-bold hover:opacity-90 transition"
-          >
-            {currentQuestion === quizData.length - 1 ? "Finish Quiz" : "Next Question"}
+          <button onClick={handleNext} className="bg-brand-dark text-white px-8 py-3 rounded-xl font-bold hover:opacity-90 transition">
+            {currentQuestion === quizData.length - 1 ? t('quiz_finish') : t('quiz_next')}
           </button>
         </div>
       )}

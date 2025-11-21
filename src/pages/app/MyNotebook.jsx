@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { Loader2, StickyNote, BookOpen, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export default function MyNotebook() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -45,8 +47,8 @@ export default function MyNotebook() {
           <StickyNote size={32} />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-brand-dark">Study Notebook</h1>
-          <p className="text-gray-500">All your notes from every course, collected in one place.</p>
+          <h1 className="text-3xl font-bold text-brand-dark">{t('nb_title')}</h1>
+          <p className="text-gray-500">{t('nb_desc')}</p>
         </div>
       </div>
 
@@ -55,10 +57,10 @@ export default function MyNotebook() {
           <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
             <StickyNote size={40} />
           </div>
-          <h3 className="text-xl font-bold text-brand-dark mb-2">Your notebook is empty</h3>
-          <p className="text-gray-500 mb-6">Start watching lessons and take notes to see them here.</p>
+          <h3 className="text-xl font-bold text-brand-dark mb-2">{t('nb_empty')}</h3>
+          <p className="text-gray-500 mb-6">{t('nb_cta')}</p>
           <Link to="/corsi" className="inline-block bg-brand-purple text-white px-6 py-3 rounded-full font-bold hover:bg-brand-dark transition">
-            Go to Courses
+            {t('nav_courses')}
           </Link>
         </div>
       ) : (

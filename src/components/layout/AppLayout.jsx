@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { LayoutDashboard, BookOpen, Calendar, LogOut, User, ShieldCheck, ShoppingBag, Settings, Download, Menu, X, Trophy, StickyNote } from 'lucide-react'
 import AnnouncementBanner from '../ui/AnnouncementBanner'
 
 export default function AppLayout() {
   const { signOut, user, profile, isAdmin } = useAuth()
+  const { t } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -51,19 +53,19 @@ export default function AppLayout() {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
-          <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
-          <NavItem to="/corsi" icon={BookOpen} label="All Courses" />
-          <NavItem to="/notebook" icon={StickyNote} label="My Notebook" />
-          <NavItem to="/leaderboard" icon={Trophy} label="Leaderboard" />
-          <NavItem to="/lezioni-live" icon={Calendar} label="Live Lessons" />
-          <NavItem to="/store" icon={ShoppingBag} label="Store & Ebooks" />
-          <NavItem to="/downloads" icon={Download} label="My Downloads" />
-          <NavItem to="/profile" icon={Settings} label="Profile" />
+          <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav_dashboard')} />
+          <NavItem to="/corsi" icon={BookOpen} label={t('nav_courses')} />
+          <NavItem to="/notebook" icon={StickyNote} label={t('nav_notebook')} />
+          <NavItem to="/leaderboard" icon={Trophy} label={t('nav_leaderboard')} />
+          <NavItem to="/lezioni-live" icon={Calendar} label={t('nav_live')} />
+          <NavItem to="/store" icon={ShoppingBag} label={t('nav_store')} />
+          <NavItem to="/downloads" icon={Download} label={t('nav_downloads')} />
+          <NavItem to="/profile" icon={Settings} label={t('nav_profile')} />
           
           {isAdmin && (
             <div className="pt-4 mt-4 border-t border-gray-100">
-               <p className="px-4 text-xs font-bold text-gray-400 uppercase mb-2">Admin Area</p>
-               <NavItem to="/admin" icon={ShieldCheck} label="Management" />
+               <p className="px-4 text-xs font-bold text-gray-400 uppercase mb-2">{t('nav_admin')}</p>
+               <NavItem to="/admin" icon={ShieldCheck} label={t('nav_management')} />
             </div>
           )}
         </nav>
@@ -79,7 +81,7 @@ export default function AppLayout() {
             </div>
           </div>
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg transition text-sm font-medium">
-            <LogOut size={18} /> Logout
+            <LogOut size={18} /> {t('nav_logout')}
           </button>
         </div>
       </aside>

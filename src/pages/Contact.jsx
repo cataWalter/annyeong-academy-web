@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import Navbar from '../components/sections/Navbar'
 import Footer from '../components/sections/Footer'
-import { Mail, MapPin, Phone, Loader2 } from 'lucide-react'
+import { Mail, Phone, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function Contact() {
+  const { t } = useLanguage()
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({ name: '', email: '', message: '' })
@@ -12,16 +14,11 @@ export default function Contact() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    
     try {
-      const { error } = await supabase
-        .from('contact_messages')
-        .insert([formData])
-        
-      if (error) throw error
+      await supabase.from('contact_messages').insert([formData])
       setSent(true)
     } catch (error) {
-      alert("Error sending message: " + error.message)
+      alert("Error sending message")
     } finally {
       setLoading(false)
     }
@@ -34,8 +31,8 @@ export default function Contact() {
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
           
           <div>
-            <h1 className="text-4xl font-bold text-brand-dark mb-6">Contact Us</h1>
-            <p className="text-gray-600 mb-8">Have questions about courses or the webinar? We are here to help.</p>
+            <h1 className="text-4xl font-bold text-brand-dark mb-6">{t('contact_title')}</h1>
+            <p className="text-gray-600 mb-8">{t('contact_desc')}</p>
             
             <div className="space-y-6">
               <div className="flex items-center gap-4">
@@ -59,13 +56,13 @@ export default function Contact() {
             {sent ? (
               <div className="text-center py-12">
                 <div className="text-5xl mb-4">✅</div>
-                <h3 className="text-xl font-bold text-brand-dark">Message Sent!</h3>
-                <p className="text-gray-500">We will reply within 24 hours.</p>
+                <h3 className="text-xl font-bold text-brand-dark">{t('contact_sent')}</h3>
+                <p className="text-gray-500">{t('contact_reply')}</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('contact_name')}</label>
                   <input 
                     required 
                     type="text" 
@@ -75,7 +72,7 @@ export default function Contact() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('auth_email')}</label>
                   <input 
                     required 
                     type="email" 
@@ -85,7 +82,7 @@ export default function Contact() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('contact_msg')}</label>
                   <textarea 
                     required 
                     rows="4" 
@@ -99,7 +96,7 @@ export default function Contact() {
                   type="submit" 
                   className="w-full bg-brand-dark text-white font-bold py-3 rounded-xl hover:opacity-90 transition flex justify-center"
                 >
-                  {loading ? <Loader2 className="animate-spin" /> : "Send Message"}
+                  {loading ? <Loader2 className="animate-spin" /> : t('btn_send')}
                 </button>
               </form>
             )}

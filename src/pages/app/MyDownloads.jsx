@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../context/LanguageContext'
 import { supabase } from '../../lib/supabase'
 import { Download, FileText, Loader2, ExternalLink } from 'lucide-react'
 import { extractTag, cleanDescription } from '../../lib/helpers'
 
 export default function MyDownloads() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [downloads, setDownloads] = useState([])
 
@@ -28,13 +30,13 @@ export default function MyDownloads() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-brand-dark mb-2">My Downloads</h1>
-      <p className="text-gray-500 mb-8">Access the digital files you purchased.</p>
+      <h1 className="text-2xl font-bold text-brand-dark mb-2">{t('dl_title')}</h1>
+      <p className="text-gray-500 mb-8">{t('dl_desc')}</p>
 
       {downloads.length === 0 ? (
         <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-300 text-center">
-          <p className="text-gray-500 mb-4">You haven't purchased any Ebooks yet.</p>
-          <a href="/store" className="text-brand-purple font-bold hover:underline">Go to Store</a>
+          <p className="text-gray-500 mb-4">{t('dl_empty')}</p>
+          <a href="/store" className="text-brand-purple font-bold hover:underline">{t('nav_store')}</a>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -55,7 +57,7 @@ export default function MyDownloads() {
                 
                 {downloadUrl ? (
                   <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-brand-purple text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition shadow-md hover:shadow-lg">
-                    <Download size={18} /> Download File
+                    <Download size={18} /> {t('dl_btn')}
                   </a>
                 ) : (
                   <button disabled className="flex items-center justify-center gap-2 bg-gray-100 text-gray-400 px-6 py-3 rounded-xl font-bold cursor-not-allowed">

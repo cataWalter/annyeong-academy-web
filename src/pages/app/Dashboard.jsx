@@ -66,7 +66,7 @@ export default function Dashboard() {
               <div className="bg-orange-100 p-1.5 rounded-lg"><Flame size={20} className="text-orange-500 fill-orange-500"/></div>
               <div>
                  <p className="text-xs text-gray-400 font-bold uppercase">{t('dash_streak')}</p>
-                 <p className="font-bold text-brand-dark">{stats.streak} Days</p>
+                 <p className="font-bold text-brand-dark">{stats.streak} {t('dash_days')}</p>
               </div>
            </div>
            <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
@@ -162,7 +162,7 @@ export default function Dashboard() {
                       <div className="bg-orange-50 text-orange-500 p-3 rounded-lg h-fit"><Calendar size={18}/></div>
                       <div>
                         <h4 className="font-bold text-sm text-gray-800 line-clamp-1">{lesson.title}</h4>
-                        <a href="https://zoom.us/join" target="_blank" className="text-xs text-brand-blue font-bold hover:underline mt-1 block">{t('live_join')}</a>
+                        <a href="https://zoom.us/join" target="_blank" className="text-xs text-brand-blue font-bold hover:underline mt-1 block">{t('dash_join')}</a>
                       </div>
                     </div>
                   ))}
