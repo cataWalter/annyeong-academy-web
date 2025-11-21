@@ -1,14 +1,17 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
-import { BookOpen, Loader2, PlayCircle, Calendar } from 'lucide-react'
+import { BookOpen, Loader2, PlayCircle, Calendar, Download, ArrowRight } from 'lucide-react'
 
 export default function Dashboard() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
+  
+  // State
   const [courses, setCourses] = useState([])
   const [liveLessons, setLiveLessons] = useState([])
+  const [ebooks, setEbooks] = useState([])
 
   useEffect(() => {
     if (user) fetchData()
@@ -16,6 +19,7 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
+      // Get all purchased product IDs
       const { data: purchases } = await supabase.from('purchases')
         .select('product_id').eq('user_id', user.id).eq('status', 'completed')
 
@@ -26,6 +30,7 @@ export default function Dashboard() {
         if (products) {
           setCourses(products.filter(p => p.type === 'course'))
           setLiveLessons(products.filter(p => p.type === 'standalone'))
+          setEbooks(products.filter(p => p.type === 'ebook'))
         }
       }
     } catch (error) { console.error(error) } 
@@ -35,67 +40,119 @@ export default function Dashboard() {
   if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple" /></div>
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-brand-dark mb-2">La tua Dashboard</h1>
-      <p className="text-gray-500 mb-8">Bentornato! Ecco i tuoi progressi.</p>
+    <div className="pb-10">
+      <h1 className="text-3xl font-bold text-brand-dark mb-2">Ciao, {user.email.split('@')[0]}! 👋</h1>
+      <p className="text-gray-500 mb-8">Ecco il riepilogo del tuo apprendimento.</p>
 
+      {/* STATS GRID */}
       <div className="grid md:grid-cols-3 gap-6 mb-12">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div className="text-4xl font-bold text-brand-purple mb-1">{courses.length}</div>
-          <div className="text-sm text-gray-500 font-medium uppercase">Corsi Attivi</div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between h-32">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">I Miei Corsi</p>
+              <p className="text-3xl font-bold text-brand-purple mt-1">{courses.length}</p>
+            </div>
+            <div className="bg-purple-50 p-2 rounded-lg text-brand-purple"><BookOpen size={20}/></div>
+          </div>
+          <Link to="/corsi" className="text-xs font-bold text-gray-400 hover:text-brand-purple flex items-center gap-1 transition">Vedi Catalogo <ArrowRight size={12}/></Link>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div className="text-4xl font-bold text-brand-blue mb-1">{liveLessons.length}</div>
-          <div className="text-sm text-gray-500 font-medium uppercase">Live Prenotate</div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between h-32">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Live Attive</p>
+              <p className="text-3xl font-bold text-brand-blue mt-1">{liveLessons.length}</p>
+            </div>
+            <div className="bg-blue-50 p-2 rounded-lg text-brand-blue"><Calendar size={20}/></div>
+          </div>
+          <Link to="/lezioni-live" className="text-xs font-bold text-gray-400 hover:text-brand-blue flex items-center gap-1 transition">Prenota Nuova <ArrowRight size={12}/></Link>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between h-32">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Ebook & File</p>
+              <p className="text-3xl font-bold text-gray-700 mt-1">{ebooks.length}</p>
+            </div>
+            <div className="bg-gray-50 p-2 rounded-lg text-gray-600"><Download size={20}/></div>
+          </div>
+          <Link to="/downloads" className="text-xs font-bold text-gray-400 hover:text-gray-600 flex items-center gap-1 transition">Vai ai Download <ArrowRight size={12}/></Link>
         </div>
       </div>
 
-      {/* LIVE LESSONS SECTION */}
-      {liveLessons.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-xl font-bold text-brand-dark mb-4">Prossime Lezioni Live</h2>
-          <div className="space-y-4">
-            {liveLessons.map(lesson => (
-              <div key={lesson.id} className="bg-white p-6 rounded-2xl border border-gray-100 flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600">
-                  <Calendar size={24} />
+      {/* MAIN CONTENT GRID */}
+      <div className="grid lg:grid-cols-3 gap-8">
+        
+        {/* Left Column: Courses */}
+        <div className="lg:col-span-2 space-y-6">
+          <h2 className="text-xl font-bold text-brand-dark">I tuoi Corsi</h2>
+          {courses.length > 0 ? (
+            <div className="space-y-4">
+              {courses.map(course => (
+                <div key={course.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition">
+                  <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                     <img src={course.image_url || 'https://placehold.co/150'} alt={course.title} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-brand-dark truncate">{course.title}</h3>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{course.description}</p>
+                  </div>
+                  <Link to={`/corsi/${course.id}`} className="bg-brand-purple/10 text-brand-purple p-3 rounded-full hover:bg-brand-purple hover:text-white transition">
+                    <PlayCircle size={24} />
+                  </Link>
                 </div>
-                <div>
-                  <h3 className="font-bold text-brand-dark">{lesson.title}</h3>
-                  <p className="text-sm text-gray-500">Controlla la tua email per il link Zoom</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* COURSES SECTION */}
-      <h2 className="text-xl font-bold text-brand-dark mb-4">I miei Corsi</h2>
-      {courses.length > 0 ? (
-        <div className="grid md:grid-cols-2 gap-6">
-          {courses.map(course => (
-            <div key={course.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-              <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                 <img src={course.image_url || 'https://placehold.co/100x100'} alt={course.title} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-brand-dark">{course.title}</h3>
-                <Link to={\/corsi/\\} className="text-sm text-brand-purple font-semibold hover:underline flex items-center gap-1 mt-1">
-                  <PlayCircle size={14} /> Vai alle lezioni
-                </Link>
-              </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-gray-300">
+              <p className="text-gray-500 mb-4">Non hai ancora iniziato nessun corso.</p>
+              <Link to="/corsi" className="inline-block bg-brand-purple text-white px-6 py-2 rounded-full font-bold text-sm">Inizia Ora</Link>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="bg-white rounded-2xl p-8 text-center border border-dashed border-gray-300">
-          <p className="text-gray-500 mb-4">Non sei ancora iscritto a nessun corso.</p>
-          <Link to="/corsi" className="inline-block bg-brand-purple text-white px-6 py-2 rounded-full font-medium">
-            Esplora il Catalogo
-          </Link>
+
+        {/* Right Column: Upcoming Lives & Downloads */}
+        <div className="space-y-8">
+           
+           {/* Live Section */}
+           <div>
+             <h2 className="text-xl font-bold text-brand-dark mb-4">Prossime Live</h2>
+             {liveLessons.length > 0 ? (
+                <div className="space-y-3">
+                  {liveLessons.map(lesson => (
+                    <div key={lesson.id} className="bg-white p-4 rounded-xl border border-gray-100 flex gap-3">
+                      <div className="bg-orange-50 text-orange-500 p-3 rounded-lg h-fit"><Calendar size={18}/></div>
+                      <div>
+                        <h4 className="font-bold text-sm text-gray-800">{lesson.title}</h4>
+                        <a href="https://zoom.us/join" target="_blank" className="text-xs text-brand-blue font-bold hover:underline mt-1 block">Link Zoom</a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+             ) : (
+                <p className="text-sm text-gray-400 italic">Nessuna lezione live prenotata.</p>
+             )}
+           </div>
+
+           {/* Quick Downloads */}
+           <div>
+             <h2 className="text-xl font-bold text-brand-dark mb-4">Materiali Recenti</h2>
+             {ebooks.length > 0 ? (
+                <div className="space-y-3">
+                  {ebooks.slice(0, 3).map(book => (
+                    <Link key={book.id} to="/downloads" className="bg-white p-4 rounded-xl border border-gray-100 flex items-center gap-3 hover:bg-gray-50 transition">
+                      <div className="bg-blue-50 text-brand-blue p-2 rounded-lg"><Download size={16}/></div>
+                      <span className="text-sm font-medium text-gray-700 truncate">{book.title}</span>
+                    </Link>
+                  ))}
+                </div>
+             ) : (
+                <p className="text-sm text-gray-400 italic">Nessun download disponibile.</p>
+             )}
+           </div>
+
         </div>
-      )}
+      </div>
     </div>
   )
 }

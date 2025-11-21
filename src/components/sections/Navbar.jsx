@@ -1,8 +1,10 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Menu, X, LogIn } from 'lucide-react'
+import { Menu, X, LogIn, LayoutDashboard, User } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 
 export default function Navbar() {
+  const { user } = useAuth()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -21,13 +23,13 @@ export default function Navbar() {
   }
 
   return (
-    <nav className={\ixed top-0 left-0 w-full z-50 transition-all duration-300 \\}>
+    <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
           <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-blue to-brand-purple">
-            Annyeong AkadÃ©mia
+            Annyeong Akadémia
           </span>
         </Link>
 
@@ -38,9 +40,16 @@ export default function Navbar() {
           
           <div className="h-6 w-px bg-gray-300"></div>
           
-          <Link to="/login" className="flex items-center gap-2 text-brand-dark font-bold hover:text-brand-purple transition">
-            <LogIn size={18} /> Accedi
-          </Link>
+          {user ? (
+            <Link to="/dashboard" className="flex items-center gap-2 text-brand-dark font-bold hover:text-brand-purple transition">
+              <div className="bg-brand-purple text-white p-1 rounded-md"><LayoutDashboard size={16} /></div>
+              Vai alla Dashboard
+            </Link>
+          ) : (
+            <Link to="/login" className="flex items-center gap-2 text-brand-dark font-bold hover:text-brand-purple transition">
+              <LogIn size={18} /> Accedi
+            </Link>
+          )}
           
           <button 
             onClick={scrollToForm}
@@ -61,10 +70,20 @@ export default function Navbar() {
         <div className="md:hidden absolute top-full left-0 w-full bg-white border-t border-gray-100 shadow-xl p-6 flex flex-col gap-4">
           <Link to="/about" className="text-lg font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Chi Siamo</Link>
           <Link to="/tutors" className="text-lg font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Insegnanti</Link>
-          <Link to="/login" className="text-lg font-bold text-brand-purple" onClick={() => setMobileMenuOpen(false)}>Area Studenti</Link>
+          
+          {user ? (
+             <Link to="/dashboard" className="text-lg font-bold text-brand-purple flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
+                <LayoutDashboard size={20} /> Dashboard
+             </Link>
+          ) : (
+             <Link to="/login" className="text-lg font-bold text-brand-dark flex items-center gap-2" onClick={() => setMobileMenuOpen(false)}>
+                <LogIn size={20} /> Accedi
+             </Link>
+          )}
+
           <button 
             onClick={scrollToForm}
-            className="w-full py-3 bg-brand-dark text-white rounded-xl font-bold"
+            className="w-full py-3 bg-brand-dark text-white rounded-xl font-bold mt-2"
           >
             Prenota Webinar
           </button>

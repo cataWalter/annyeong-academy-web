@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { useLayoutEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
@@ -10,6 +10,7 @@ import About from './pages/About'
 import Contact from './pages/Contact'
 import Tutors from './pages/Tutors'
 import FAQ from './pages/FAQ'
+import NotFound from './pages/NotFound'
 
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
@@ -45,6 +46,7 @@ function App() {
       <BrowserRouter>
         <Wrapper>
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/termini" element={<TermsPage />} />
@@ -53,9 +55,11 @@ function App() {
             <Route path="/tutors" element={<Tutors />} />
             <Route path="/faq" element={<FAQ />} />
             
+            {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
+            {/* Protected App Routes */}
             <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="profile" element={<Profile />} />
@@ -66,6 +70,9 @@ function App() {
               <Route path="lezioni-live" element={<LiveLessons />} />
               <Route path="admin" element={<AdminDashboard />} />
             </Route>
+
+            {/* Catch All */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Wrapper>
       </BrowserRouter>

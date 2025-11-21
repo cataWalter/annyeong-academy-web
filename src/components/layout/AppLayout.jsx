@@ -1,11 +1,13 @@
-﻿import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { LayoutDashboard, BookOpen, Calendar, LogOut, User, ShieldCheck, ShoppingBag, Settings, Download } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Calendar, LogOut, User, ShieldCheck, ShoppingBag, Settings, Download, Menu, X } from 'lucide-react'
 
 export default function AppLayout() {
-  const { signOut, user } = useAuth()
+  const { signOut, user, profile, isAdmin } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleLogout = async () => {
     await signOut()
@@ -17,7 +19,10 @@ export default function AppLayout() {
     return (
       <Link 
         to={to} 
-        className={\lex items-center gap-3 px-4 py-3 rounded-xl transition-all \\}
+        onClick={() => setMobileOpen(false)}
+        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+          isActive ? 'bg-brand-purple text-white shadow-md' : 'text-gray-600 hover:bg-purple-50 hover:text-brand-purple'
+        }`}
       >
         <Icon size={20} />
         <span className="font-medium">{label}</span>
@@ -27,13 +32,34 @@ export default function AppLayout() {
 
   return (
     <div className="flex min-h-screen bg-[#F8F9FC]">
-      <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col fixed h-full z-10">
-        <div className="p-6">
+      
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 w-full bg-white z-30 px-4 py-3 shadow-sm flex justify-between items-center">
+        <span className="font-bold text-brand-purple text-lg">Annyeong LMS</span>
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="text-gray-700">
+           {mobileOpen ? <X size={24}/> : <Menu size={24}/>}
+        </button>
+      </div>
+
+      {/* Sidebar Overlay for Mobile */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/50 z-20 md:hidden" onClick={() => setMobileOpen(false)}></div>
+      )}
+
+      {/* Sidebar */}
+      <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-30 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-6 hidden md:block">
           <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-blue to-brand-purple">
             Annyeong LMS
           </span>
         </div>
         
+        {/* Mobile Header in Sidebar to align items */}
+        <div className="md:hidden p-6 border-b border-gray-100 flex items-center justify-between">
+           <span className="font-bold text-brand-dark">Menu</span>
+           <button onClick={() => setMobileOpen(false)}><X size={20}/></button>
+        </div>
+
         <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
           <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavItem to="/corsi" icon={BookOpen} label="Tutti i Corsi" />
@@ -42,19 +68,25 @@ export default function AppLayout() {
           <NavItem to="/downloads" icon={Download} label="I miei Download" />
           <NavItem to="/profile" icon={Settings} label="Profilo" />
           
-          <div className="pt-4 mt-4 border-t border-gray-100">
-             <p className="px-4 text-xs font-bold text-gray-400 uppercase mb-2">Admin Area</p>
-             <NavItem to="/admin" icon={ShieldCheck} label="Gestione" />
-          </div>
+          {isAdmin && (
+            <div className="pt-4 mt-4 border-t border-gray-100">
+               <p className="px-4 text-xs font-bold text-gray-400 uppercase mb-2">Admin Area</p>
+               <NavItem to="/admin" icon={ShieldCheck} label="Gestione" />
+            </div>
+          )}
         </nav>
 
         <div className="p-4 border-t border-gray-100">
           <div className="flex items-center gap-3 px-4 py-3 mb-2">
-            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
-              <User size={16} />
+            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover"/>
+              ) : (
+                <User size={16} />
+              )}
             </div>
             <div className="text-sm overflow-hidden">
-              <p className="font-bold text-gray-700 truncate">Utente</p>
+              <p className="font-bold text-gray-700 truncate">{profile?.full_name || 'Studente'}</p>
               <p className="text-xs text-gray-400 truncate">{user?.email}</p>
             </div>
           </div>
@@ -64,11 +96,8 @@ export default function AppLayout() {
         </div>
       </aside>
 
-      <div className="flex-1 md:ml-64">
-        <header className="md:hidden bg-white p-4 shadow-sm flex justify-between items-center sticky top-0 z-20">
-          <span className="font-bold text-brand-purple">Annyeong LMS</span>
-          <button onClick={handleLogout}><LogOut size={20} className="text-gray-500" /></button>
-        </header>
+      {/* Main Content */}
+      <div className="flex-1 md:ml-64 pt-16 md:pt-0">
         <main className="p-4 md:p-8 max-w-6xl mx-auto">
           <Outlet />
         </main>

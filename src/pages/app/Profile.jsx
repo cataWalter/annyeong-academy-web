@@ -1,10 +1,10 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { User, Save, Loader2 } from 'lucide-react'
 
 export default function Profile() {
-  const { user } = useAuth()
+  const { user, refreshProfile } = useAuth()
   const [loading, setLoading] = useState(false)
   const [fullName, setFullName] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
@@ -16,15 +16,11 @@ export default function Profile() {
   const getProfile = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('full_name, avatar_url')
         .eq('id', user.id)
         .single()
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Errore caricamento profilo', error)
-      }
 
       if (data) {
         setFullName(data.full_name || '')
@@ -49,9 +45,12 @@ export default function Profile() {
       }
 
       const { error } = await supabase.from('profiles').upsert(updates)
-
       if (error) throw error
-      alert('Profilo aggiornato!')
+      
+      // Update global state immediately
+      await refreshProfile() 
+      
+      alert('Profilo aggiornato con successo!')
     } catch (error) {
       alert(error.message)
     } finally {
@@ -66,8 +65,12 @@ export default function Profile() {
 
       <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
         <div className="flex items-center gap-6 mb-8">
-          <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center text-brand-purple text-2xl font-bold">
-            {fullName ? fullName.charAt(0).toUpperCase() : <User size={32} />}
+          <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
+             {avatarUrl ? (
+               <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+             ) : (
+               <span className="text-brand-purple text-2xl font-bold">{fullName ? fullName.charAt(0).toUpperCase() : <User size={32} />}</span>
+             )}
           </div>
           <div>
             <p className="text-sm text-gray-500">Email</p>
@@ -83,12 +86,11 @@ export default function Profile() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-purple outline-none"
-              placeholder="Es. Mario Rossi"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL (Opzionale)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL (Immagine Profilo)</label>
             <input 
               type="url"
               value={avatarUrl}
