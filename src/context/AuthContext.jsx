@@ -8,31 +8,6 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUser(session.user)
-        await fetchProfile(session.user.id)
-      }
-      setLoading(false)
-    }
-    initAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        setUser(session.user)
-        await fetchProfile(session.user.id)
-      } else {
-        setUser(null)
-        setProfile(null)
-      }
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
   const fetchProfile = async (userId) => {
     try {
       const { data, error } = await supabase
@@ -47,6 +22,30 @@ export function AuthProvider({ children }) {
       console.error('Profile fetch error:', error)
     }
   }
+
+  useEffect(() => {
+    // Initialize Auth Listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // console.log("Auth Event:", event, session?.user?.email)
+      
+      if (session?.user) {
+        setUser(session.user)
+        // Only fetch profile if user changed or profile missing
+        if (!profile || profile.id !== session.user.id) {
+            await fetchProfile(session.user.id)
+        }
+      } else {
+        setUser(null)
+        setProfile(null)
+      }
+      
+      setLoading(false)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
 
   const value = {
     signUp: (data) => supabase.auth.signUp(data),

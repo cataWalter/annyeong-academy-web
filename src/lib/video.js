@@ -13,9 +13,6 @@ export const getEmbedUrl = (url) => {
   
   // Vimeo
   if (url.includes('vimeo.com')) {
-    // Handle standard vimeo url to player url conversion if needed
-    // Usually vimeo embed codes are different, but if user pastes "vimeo.com/12345", 
-    // we try to convert to player.vimeo.com/video/12345
     const vimeoId = url.split('.com/')[1];
     if (vimeoId && !url.includes('player.vimeo.com')) {
       return `https://player.vimeo.com/video/${vimeoId}`;

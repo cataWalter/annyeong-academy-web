@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
@@ -7,6 +7,8 @@ export default function Navbar() {
   const { user } = useAuth()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50)
@@ -14,11 +16,21 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const scrollToForm = () => {
-    const form = document.getElementById('registration')
-    if (form) {
-      form.scrollIntoView({ behavior: 'smooth' })
-      setMobileMenuOpen(false)
+  const scrollToForm = async () => {
+    setMobileMenuOpen(false)
+    
+    // If not on home page, go there first
+    if (location.pathname !== '/') {
+      await navigate('/')
+      // Small timeout to allow page load before scrolling
+      setTimeout(() => {
+        const form = document.getElementById('registration')
+        if (form) form.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+    } else {
+      // Already on home page
+      const form = document.getElementById('registration')
+      if (form) form.scrollIntoView({ behavior: 'smooth' })
     }
   }
 

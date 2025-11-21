@@ -71,3 +71,36 @@ This project was developed as an **emergency pivot** to meet the strict deadline
     *   **Auth:** Secure Email/Password authentication.
     *   **Storage:** Hosting for Course PDFs, Audio files, and PPTs.
 *   **Payments:** Logic ready for Stripe Integration (currently in Simulation Mode).
+---
+
+## 🚀 Setup & Installation
+
+### 1. Database Configuration
+This project uses **Supabase**.
+1. Create a new Supabase project.
+2. Go to the SQL Editor in your dashboard.
+3. Run the contents of these files in order:
+   - `final_db_setup.sql` (Creates Tables & Security Policies)
+   - `storage_setup.sql` (Enables File Uploads)
+   - `seed_data.sql` (Adds Demo Courses & Products)
+
+### 2. Environment Variables
+1. Rename `.env.local.example` (if it exists) to `.env.local`.
+2. Fill in your keys from Supabase -> Project Settings -> API:
+    ```
+    VITE_SUPABASE_URL=https://your-project.supabase.co
+    VITE_SUPABASE_ANON_KEY=your-anon-key
+    ```
+
+### 3. Run Locally
+```bash
+npm install
+npm run dev
+```
+
+### 4. Admin Access
+To access the Admin Dashboard at `/admin`:
+1. Sign up as a new user in the app.
+2. Go to Supabase Dashboard -> Table Editor -> `profiles`.
+3. Find your user row and change the `role` column from `student` to `admin`.
+4. Refresh the page.

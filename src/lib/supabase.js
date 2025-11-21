@@ -3,11 +3,13 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// Helper to check if env vars are set properly to avoid crashing immediately
 const isConfigured = supabaseUrl && supabaseAnonKey && supabaseUrl !== 'INSERISCI_QUI_URL_SUPABASE'
 
 export const supabase = isConfigured 
   ? createClient(supabaseUrl, supabaseAnonKey)
   : {
+      // Mock implementation to prevent crash if keys are missing
       from: () => ({
         select: () => ({ data: [], error: null }),
         insert: () => ({ error: { message: "Supabase not configured! Check .env.local" } }),
@@ -24,7 +26,8 @@ export const supabase = isConfigured
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
         signInWithPassword: async () => ({ error: { message: "Configure Supabase first!" } }),
         signUp: async () => ({ error: { message: "Configure Supabase first!" } }),
-        signOut: async () => ({})
+        signOut: async () => ({}),
+        resetPasswordForEmail: async () => ({ error: { message: "Configure Supabase first!" } })
       },
       storage: {
         from: () => ({
