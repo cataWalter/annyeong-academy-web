@@ -74,20 +74,20 @@ Before testing, ensure:
     -   Click "Mark Complete".
     -   Verify progress bar in sidebar updates.
     -   Verify XP increases in the popup.
-- [ ] **Report Issue**: Click the warning icon. Send a bug report. Verify it appears in `contact_messages` table.
+- [x] **Report Issue**: Click the warning icon. Send a bug report. Verify it appears in `contact_messages` table.
 
 ---
 
 ## 4. 🛍️ E-Commerce & Digital Goods
 *Goal: Verify non-video product delivery.*
 
-- [ ] **Store**: Go to "Store & Ebooks".
-- [ ] **Buy Ebook**: Purchase "Survival Korean PDF".
-- [ ] **My Downloads**:
+- [x] **Store**: Go to "Store & Ebooks".
+- [x] **Buy Ebook**: Purchase "Survival Korean PDF".
+- [x] **My Downloads**:
     -   Go to "My Downloads" page.
     -   Click "Download".
     -   **Expected**: It should open the link (or the dummy link provided in seed data).
-- [ ] **Live Lessons**:
+- [x] **Live Lessons**:
     -   Go to "Live Lessons".
     -   Check if "Date" and "Time" are displayed correctly.
     -   Purchase a spot.
@@ -98,14 +98,14 @@ Before testing, ensure:
 ## 5. 🏆 Engagement & Profile
 *Goal: Verify retention features.*
 
-- [ ] **Leaderboard**: Go to `/leaderboard`. Ensure your user is listed with correct XP.
-- [ ] **My Notebook**: Go to `/notebook`. Ensure notes taken in Course Player appear here aggregated.
-- [ ] **Profile Settings**:
+- [x] **Leaderboard**: Go to `/leaderboard`. Ensure your user is listed with correct XP.
+- [x] **My Notebook**: Go to `/notebook`. Ensure notes taken in Course Player appear here aggregated.
+- [x] **Profile Settings**:
     -   Upload an Avatar image.
     -   Change Display Name.
     -   Save.
     -   Refresh page to ensure persistence.
-- [ ] **Invoice**: In Profile -> Order History, click the Download icon. Verify a PDF is generated.
+- [x] **Invoice**: In Profile -> Order History, click the Download icon. Verify a PDF is generated.
 
 ---
 
@@ -119,24 +119,24 @@ Before testing, ensure:
 4. Refresh the app.
 
 **Tests**:
-- [ ] **Access**: Verify "Admin Area" appears in Sidebar.
-- [ ] **Stats**: Check if the top cards show correct numbers (Users, Sales, etc.).
-- [ ] **Create Product**:
+- [x] **Access**: Verify "Admin Area" appears in Sidebar.
+- [x] **Stats**: Check if the top cards show correct numbers (Users, Sales, etc.).
+- [x] **Create Product**:
     -   Go to Products tab.
     -   Create a new Course.
     -   Upload a cover image.
     -   Save.
-- [ ] **Create Lesson**:
+- [x] **Create Lesson**:
     -   Go to Lessons tab.
     -   Select the course you just made.
     -   Add a video URL.
     -   Add Quiz JSON: `[{"question":"Test?","options":["Yes","No"],"correct":0}]`
     -   Save.
-- [ ] **Announcements**:
+- [x] **Announcements**:
     -   Post a new announcement (e.g., "Maintenance tonight").
     -   Go to Dashboard as a student.
     -   **Expected**: Banner appears at the top of the screen.
-- [ ] **Manage Users**:
+- [x] **Manage Users**:
     -   Go to Students tab.
     -   Find a user.
     -   Manually enroll them in a course.
@@ -145,9 +145,9 @@ Before testing, ensure:
 
 ## 7. 🐛 Technical & Edge Cases
 - [x] **AdBlocker Test**: Enable uBlock Origin / AdBlock Plus. Refresh. **Ensure the page does NOT crash** (White screen test).
-- [ ] **Mobile View**: Open Chrome DevTools (F12) -> Toggle Device Toolbar (Mobile).
+- [x] **Mobile View**: Open Chrome DevTools (F12) -> Toggle Device Toolbar (Mobile).
     -   Check Hamburger menu functionality.
     -   Check Video Player responsiveness.
-- [ ] **404 Page**: Go to `http://localhost:5173/random-page-xyz`. Verify "Page Not Found" design.
-- [ ] **Profile picture**: Upload a different profile picture
+- [x] **404 Page**: Go to `http://localhost:5173/random-page-xyz`. Verify "Page Not Found" design.
+- [x] **Profile picture**: Upload a different profile picture
 

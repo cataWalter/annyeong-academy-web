@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { Upload, Package, LayoutList, Loader2, Trash2, RefreshCw, Users, MessageSquare, Image as ImageIcon, Edit, X, FileText, Video, Mic, GraduationCap, PlusCircle, DollarSign, Megaphone, Calendar, HelpCircle } from 'lucide-react'
+import { 
+  Upload, Package, LayoutList, Loader2, Trash2, RefreshCw, Users, 
+  Image as ImageIcon, Edit, X, FileText, Video, Mic, GraduationCap, 
+  PlusCircle, DollarSign, Megaphone, Calendar, HelpCircle, 
+  Mail, AlertTriangle, Info 
+} from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { extractTag, cleanDescription, generateFilePath } from '../../lib/helpers'
 
@@ -12,6 +17,9 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('lessons')
   const [loading, setLoading] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  
+  // UI State
+  const [showQuizHelp, setShowQuizHelp] = useState(false)
   
   // Data
   const [courses, setCourses] = useState([])
@@ -26,7 +34,7 @@ export default function AdminDashboard() {
   // Forms
   const [lessonData, setLessonData] = useState({ 
     title: "", course_id: "", video_url: "", quizlet_url: "", description: "", type: "video", pdf_url: "",
-    quiz_data: "" // JSON string for quiz
+    quiz_data: "" 
   })
   const [lessonMediaFile, setLessonMediaFile] = useState(null)
   const [lessonPdfFile, setLessonPdfFile] = useState(null)
@@ -59,8 +67,11 @@ export default function AdminDashboard() {
       if (leadsData) setLeads(leadsData)
       const { data: msgData } = await supabase.from('contact_messages').select('*').order('created_at', {ascending: false})
       if (msgData) setMessages(msgData)
-      const { data: usersData } = await supabase.from('profiles').select('*').order('created_at', {ascending: false})
+      
+      // FIX: Sorted by updated_at because profiles doesn't have created_at
+      const { data: usersData } = await supabase.from('profiles').select('*').order('updated_at', {ascending: false})
       if (usersData) setUsers(usersData)
+      
       const { data: purchaseData } = await supabase.from('purchases').select('user_id, product_id')
       if (purchaseData) setPurchases(purchaseData)
       const { data: annData } = await supabase.from('announcements').select('*').order('created_at', {ascending: false})
@@ -95,11 +106,6 @@ export default function AdminDashboard() {
     setLoading(false)
     if (error) alert(error.message)
     else { alert("Announcement posted!"); setAnnouncementData({ title: "", message: "", type: "info", active: true }); fetchData(); }
-  }
-
-  const toggleAnnouncement = async (id, currentStatus) => {
-    await supabase.from('announcements').update({ active: !currentStatus }).eq('id', id)
-    fetchData()
   }
 
   const startEditLesson = (l) => {
@@ -188,6 +194,10 @@ export default function AdminDashboard() {
     fetchData()
   }
 
+  // Helper to separate Contacts from Reports
+  const contactsList = messages.filter(m => m.email !== 'system@report.com')
+  const reportsList = messages.filter(m => m.email === 'system@report.com')
+
   if (authLoading || !isAdmin) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-brand-purple"/></div>
 
   return (
@@ -202,7 +212,7 @@ export default function AdminDashboard() {
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"><div className="flex items-center gap-3 text-gray-500 mb-1"><GraduationCap size={18}/><span className="text-xs font-bold uppercase">Students</span></div><p className="text-2xl font-bold text-brand-dark">{users.length}</p></div>
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"><div className="flex items-center gap-3 text-gray-500 mb-1"><DollarSign size={18}/><span className="text-xs font-bold uppercase">Purchases</span></div><p className="text-2xl font-bold text-brand-dark">{purchases.length}</p></div>
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"><div className="flex items-center gap-3 text-gray-500 mb-1"><Users size={18}/><span className="text-xs font-bold uppercase">Leads</span></div><p className="text-2xl font-bold text-brand-dark">{leads.length}</p></div>
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"><div className="flex items-center gap-3 text-gray-500 mb-1"><LayoutList size={18}/><span className="text-xs font-bold uppercase">Content</span></div><p className="text-2xl font-bold text-brand-dark">{allLessons.length}</p></div>
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"><div className="flex items-center gap-3 text-gray-500 mb-1"><AlertTriangle size={18}/><span className="text-xs font-bold uppercase">Reports</span></div><p className="text-2xl font-bold text-brand-dark">{reportsList.length}</p></div>
       </div>
 
       <div className="flex gap-2 mb-8 border-b border-gray-200 overflow-x-auto pb-1">
@@ -212,7 +222,8 @@ export default function AdminDashboard() {
           { id: 'students', icon: GraduationCap, label: 'Students' },
           { id: 'announce', icon: Megaphone, label: 'Announce' },
           { id: 'leads', icon: Users, label: 'Leads' },
-          { id: 'messages', icon: MessageSquare, label: 'Msgs' }
+          { id: 'contacts', icon: Mail, label: 'Contacts' },
+          { id: 'reports', icon: AlertTriangle, label: 'Reports' }
         ].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 font-bold rounded-t-lg transition whitespace-nowrap ${activeTab === tab.id ? 'bg-brand-purple text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
             <tab.icon size={18}/> {tab.label}
@@ -256,9 +267,35 @@ export default function AdminDashboard() {
                 <input type="file" className="input-field" onChange={e => setLessonPdfFile(e.target.files[0])} />
                 <textarea className="input-field" placeholder="Desc" rows="3" value={lessonData.description} onChange={e => setLessonData({...lessonData, description: e.target.value})} />
                 
-                {/* Quiz Editor */}
+                {/* QUIZ EDITOR WITH HELP */}
                 <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                   <label className="label flex items-center gap-1 text-brand-purple"><HelpCircle size={14}/> Quiz Data (JSON)</label>
+                   <div className="flex items-center justify-between mb-2">
+                     <label className="label flex items-center gap-1 text-brand-purple mb-0">Quiz Data (JSON)</label>
+                     <button type="button" onClick={() => setShowQuizHelp(!showQuizHelp)} className="text-gray-400 hover:text-brand-purple transition p-1 rounded-full hover:bg-purple-100">
+                       <HelpCircle size={16} />
+                     </button>
+                   </div>
+                   
+                   {showQuizHelp && (
+                     <div className="mb-3 p-3 bg-white rounded border border-purple-100 text-xs text-gray-500 font-mono shadow-sm animate-slide-in">
+                       <p className="font-bold mb-2 text-brand-purple">Format Example:</p>
+                       <pre className="whitespace-pre-wrap">
+{`[
+  {
+    "question": "Is this correct?",
+    "options": ["Yes", "No"],
+    "correct": 0
+  },
+  {
+    "question": "Is this wrong?",
+    "options": ["Yes", "No"],
+    "correct": 1
+  }
+]`}
+                       </pre>
+                     </div>
+                   )}
+
                    <textarea className="input-field text-xs font-mono" placeholder='[{"question":"...","options":["..."],"correct":0}]' rows="3" value={lessonData.quiz_data} onChange={e => setLessonData({...lessonData, quiz_data: e.target.value})} />
                 </div>
 
@@ -288,7 +325,26 @@ export default function AdminDashboard() {
                    </div>
                 )}
 
-                <div className="file-input-wrapper"><label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600"><ImageIcon size={16}/> {productCoverFile ? productCoverFile.name : "Cover Img"}</label><input type="file" className="hidden" onChange={e => setProductCoverFile(e.target.files[0])} /></div>
+                {/* FIXED COVER IMG INPUT */}
+                <div className="file-input-wrapper">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 w-full">
+                    <ImageIcon size={16}/> 
+                    <span>{productCoverFile ? productCoverFile.name : "Cover Img (.jpg/.png)"}</span>
+                    <input type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={e => setProductCoverFile(e.target.files[0])} />
+                  </label>
+                </div>
+
+                {/* ADDED EBOOK INPUT */}
+                {productData.type === 'ebook' && (
+                  <div className="file-input-wrapper bg-purple-50 border-purple-100">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-purple w-full font-bold">
+                      <FileText size={16}/> 
+                      <span>{productEbookFile ? productEbookFile.name : "Upload PDF (Ebook)"}</span>
+                      <input type="file" className="hidden" accept="application/pdf" onChange={e => setProductEbookFile(e.target.files[0])} />
+                    </label>
+                  </div>
+                )}
+
                 <textarea className="input-field" placeholder="Desc" rows="4" value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} />
                 <button disabled={loading} type="submit" className="btn-primary w-full bg-brand-blue">{loading ? "Saving..." : "Save"}</button>
                 {editingId && <button type="button" onClick={cancelEdit} className="w-full text-sm text-gray-500 mt-2">Cancel</button>}
@@ -307,8 +363,59 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {activeTab === 'leads' && <div className="bg-white p-6 rounded-2xl shadow-sm">{leads.map(l => <div key={l.id} className="border-b py-2">{l.full_name} ({l.email})</div>)}</div>}
-      {activeTab === 'messages' && <div className="bg-white p-6 rounded-2xl shadow-sm">{messages.map(m => <div key={m.id} className="border-b py-2 font-bold">{m.name}: <span className="font-normal">{m.message}</span></div>)}</div>}
+      {activeTab === 'leads' && (
+        <div className="bg-white p-6 rounded-2xl shadow-sm">
+          {leads.map(l => (
+            <div key={l.id} className="border-b py-3 last:border-0 flex justify-between items-center">
+              <div>
+                <p className="font-bold text-gray-800">{l.full_name}</p>
+                <p className="text-xs text-gray-500">{l.email} • {l.webinar_date}</p>
+              </div>
+              <span className="text-xs bg-green-50 text-green-600 px-2 py-1 rounded font-bold">Lead</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* CONTACTS TAB */}
+      {activeTab === 'contacts' && (
+        <div className="bg-white p-6 rounded-2xl shadow-sm">
+          <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2"><Mail size={20}/> Contact Messages</h3>
+          {contactsList.length === 0 && <p className="text-gray-400">No messages.</p>}
+          {contactsList.map(m => (
+            <div key={m.id} className="border-b border-gray-100 py-4 last:border-0 hover:bg-gray-50 px-2 -mx-2 rounded transition">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="font-bold text-brand-dark">{m.name}</p>
+                  <p className="text-xs text-gray-500">{m.email} • {new Date(m.created_at).toLocaleDateString()}</p>
+                </div>
+                <button onClick={() => handleDelete('contact_messages', m.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={16}/></button>
+              </div>
+              <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">{m.message}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* REPORTS TAB */}
+      {activeTab === 'reports' && (
+        <div className="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-red-500">
+          <h3 className="font-bold text-red-600 mb-4 flex items-center gap-2"><AlertTriangle size={20}/> Content Issues</h3>
+          {reportsList.length === 0 && <p className="text-gray-400">No active reports. Good job!</p>}
+          {reportsList.map(m => (
+            <div key={m.id} className="border-b border-red-50 py-4 last:border-0">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded mb-2 inline-block">BUG REPORT</span>
+                  <p className="font-bold text-gray-800 text-sm mb-1">{new Date(m.created_at).toLocaleString()}</p>
+                  <p className="text-sm text-gray-700 font-mono bg-red-50/50 p-3 rounded border border-red-100">{m.message}</p>
+                </div>
+                <button onClick={() => handleDelete('contact_messages', m.id)} className="text-gray-300 hover:text-red-500 ml-4"><Trash2 size={18}/></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <style>{`
         .label { display: block; font-size: 0.85rem; font-weight: bold; color: #4b5563; margin-bottom: 0.3rem; }
@@ -316,7 +423,8 @@ export default function AdminDashboard() {
         .input-field:focus { border-color: #6a11cb; ring: 2px solid #6a11cb33; }
         .btn-primary { background: #192335; color: white; font-weight: bold; padding: 0.8rem; border-radius: 0.5rem; transition: opacity 0.2s; }
         .btn-primary:hover { opacity: 0.9; }
-        .file-input-wrapper { border: 1px solid #e5e7eb; padding: 0.75rem; border-radius: 0.5rem; background: #f9fafb; }
+        .file-input-wrapper { border: 1px solid #e5e7eb; padding: 0.75rem; border-radius: 0.5rem; background: #f9fafb; transition: background 0.2s; }
+        .file-input-wrapper:hover { background: #f3f4f6; }
       `}</style>
     </div>
   )
