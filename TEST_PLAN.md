@@ -62,15 +62,15 @@ Before testing, ensure:
     -   Type a note in the sidebar.
     -   Refresh the page.
     -   **Expected**: Note should persist (fetched from DB).
-- [ ] **Vocabulary Drill**:
+- [x] **Vocabulary Drill**:
     -   Flip a card.
     -   Click "Easy" or "Hard".
     -   Finish the deck -> Verify "Drill Complete" screen.
-- [ ] **Quiz**:
+- [x] **Quiz**:
     -   Take a quiz (if the lesson has one).
     -   Pass the quiz.
     -   **Expected**: Confetti animation 🎉.
-- [ ] **Progress**:
+- [x] **Progress**:
     -   Click "Mark Complete".
     -   Verify progress bar in sidebar updates.
     -   Verify XP increases in the popup.

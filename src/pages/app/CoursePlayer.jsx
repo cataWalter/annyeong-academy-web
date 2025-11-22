@@ -1,3 +1,5 @@
+// PATH: src/pages/app/CoursePlayer.jsx
+
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
@@ -86,11 +88,19 @@ export default function CoursePlayer() {
     try {
       let newCompletedIds;
       if (isComplete) {
+        // CASE: UNMARKING (Incomplete)
         await supabase.from('lesson_progress').delete().eq('user_id', user.id).eq('lesson_id', lessonId)
         newCompletedIds = completedLessonIds.filter(id => id !== lessonId)
+        
+        // 🐛 BUG FIX: Remove 50 XP so users can't farm XP by toggling
+        addXP(-50) 
+
       } else {
+        // CASE: MARKING (Complete)
         await supabase.from('lesson_progress').insert([{ user_id: user.id, lesson_id: lessonId, course_id: id }])
         newCompletedIds = [...completedLessonIds, lessonId]
+        
+        // Add 50 XP
         addXP(50)
         setXpAnimation(50)
         setTimeout(() => setXpAnimation(null), 2000)
