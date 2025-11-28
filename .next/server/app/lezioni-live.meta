@@ -1,0 +1,16 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(app)/layout,_N_T_/(app)/lezioni-live/layout,_N_T_/(app)/lezioni-live/page,_N_T_/lezioni-live"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGFwcCk/lezioni-live/__PAGE__",
+    "/!KGFwcCk/lezioni-live",
+    "/!KGFwcCk",
+    "/_index",
+    "/_head"
+  ]
+}

@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext'
 import { supabase } from '@/lib/supabase'
 import { User, Save, Loader2, Camera, Lock, FileText, Download } from 'lucide-react'
 import { generateFilePath } from '@/lib/helpers'
-import { generateInvoice } from '../../utils/invoiceGenerator'
+import { generateInvoice } from '@/utils/invoiceGenerator'
 
 export default function Profile() {
   const { user, refreshProfile } = useAuth()

@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { useGamification } from '../../hooks/useGamification'
+import { useGamification } from '@/hooks/useGamification'
 import { usePayment } from '@/context/PaymentContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { 
