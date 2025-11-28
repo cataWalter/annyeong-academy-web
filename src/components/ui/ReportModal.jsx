@@ -1,7 +1,8 @@
+"use client";
 import { useState } from 'react'
 import { AlertTriangle, X, Loader2, Send } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
-import { useLanguage } from '../../context/LanguageContext'
+import { supabase } from '@/lib/supabase'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function ReportModal({ isOpen, onClose, contextData }) {
   const { t } = useLanguage()

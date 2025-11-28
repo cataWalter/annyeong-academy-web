@@ -1,59 +1,68 @@
+"use client";
 import Section from '../ui/Section'
-import { useLanguage } from '../../context/LanguageContext'
 
 export default function Agenda() {
-  const { t } = useLanguage()
-  const timeline = [
-    { time: '18:00', title: t('agenda_1_title'), desc: t('agenda_1_desc') },
-    { time: '18:15', title: t('agenda_2_title'), desc: t('agenda_2_desc') },
-    { time: '18:45', title: t('agenda_3_title'), desc: t('agenda_3_desc') }
-  ]
-
   return (
     <Section className="bg-white">
-      <div className="grid md:grid-cols-2 gap-16">
-        <div>
-          <h2 className="text-3xl font-bold text-brand-dark mb-8">{t('agenda_title')}</h2>
-          <div className="space-y-8 relative before:absolute before:left-4 before:top-2 before:h-full before:w-0.5 before:bg-gray-200">
-            {timeline.map((item, i) => (
-              <div key={i} className="relative pl-12">
-                <div className="absolute left-0 top-1 w-8 h-8 bg-white border-2 border-brand-purple rounded-full flex items-center justify-center z-10">
-                  <div className="w-3 h-3 bg-brand-purple rounded-full"></div>
-                </div>
-                <span className="text-brand-purple font-bold text-sm">{item.time}</span>
-                <h3 className="text-xl font-bold text-brand-dark">{item.title}</h3>
-                <p className="text-gray-600 mt-1">{item.desc}</p>
-              </div>
-            ))}
+      <div className="text-center mb-12">
+        <h2 className="text-3xl font-bold text-brand-dark">What awaits you at the free event?</h2>
+      </div>
+
+      <div className="max-w-4xl mx-auto space-y-8 relative before:absolute before:left-4 md:before:left-1/2 before:top-2 before:h-full before:w-0.5 before:bg-gray-200 before:-translate-x-1/2">
+        
+        {/* Item 1 */}
+        <div className="relative flex flex-col md:flex-row gap-8 items-center">
+          <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-brand-purple border-4 border-white rounded-full z-10 shadow-sm"></div>
+          <div className="md:w-1/2 md:text-right md:pr-12 pl-12 md:pl-0">
+            <span className="inline-block bg-purple-100 text-brand-purple text-xs font-bold px-3 py-1 rounded-full mb-2">Topic 1</span>
+            <h3 className="text-xl font-bold text-brand-dark">Exclusive Cultural Insight</h3>
+            <p className="text-gray-600 mt-2 text-sm italic">What are Koreans like in real life vs. how we see them in K-dramas?</p>
+          </div>
+          <div className="md:w-1/2 pl-12 md:pl-12">
+            <div className="bg-gray-50 p-6 rounded-2xl text-sm text-gray-600 border border-gray-100">
+              <ul className="list-disc ml-4 space-y-1">
+                <li>The "Oppa" Myth: Are Korean men really romantic?</li>
+                <li>Hierarchy & Respect: Age vs. Rank.</li>
+                <li>Seoul by Night: The truth about <i>hoesik</i> culture.</li>
+                <li>Chaebols & Plastic Surgery: Fact vs. Fiction.</li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        <div>
-          <h2 className="text-3xl font-bold text-brand-dark mb-8">{t('agenda_faq_title')}</h2>
-          <div className="space-y-4">
-            <details className="group bg-gray-50 p-4 rounded-xl cursor-pointer open:bg-purple-50 transition">
-              <summary className="font-bold text-brand-dark list-none flex justify-between items-center">
-                {t('agenda_faq_1_q')}
-                <span className="text-brand-purple group-open:rotate-180 transition">▼</span>
-              </summary>
-              <p className="text-gray-600 mt-3 text-sm">{t('agenda_faq_1_a')}</p>
-            </details>
-            <details className="group bg-gray-50 p-4 rounded-xl cursor-pointer open:bg-purple-50 transition">
-              <summary className="font-bold text-brand-dark list-none flex justify-between items-center">
-                {t('agenda_faq_2_q')}
-                <span className="text-brand-purple group-open:rotate-180 transition">▼</span>
-              </summary>
-              <p className="text-gray-600 mt-3 text-sm">{t('agenda_faq_2_a')}</p>
-            </details>
-            <details className="group bg-gray-50 p-4 rounded-xl cursor-pointer open:bg-purple-50 transition">
-              <summary className="font-bold text-brand-dark list-none flex justify-between items-center">
-                {t('agenda_faq_3_q')}
-                <span className="text-brand-purple group-open:rotate-180 transition">▼</span>
-              </summary>
-              <p className="text-gray-600 mt-3 text-sm">{t('agenda_faq_3_a')}</p>
-            </details>
+        {/* Item 2 */}
+        <div className="relative flex flex-col md:flex-row-reverse gap-8 items-center">
+          <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-brand-blue border-4 border-white rounded-full z-10 shadow-sm"></div>
+          <div className="md:w-1/2 md:text-left md:pl-12 pl-12">
+            <span className="inline-block bg-blue-100 text-brand-blue text-xs font-bold px-3 py-1 rounded-full mb-2">Topic 2</span>
+            <h3 className="text-xl font-bold text-brand-dark">Meet the Tutors</h3>
+            <p className="text-gray-600 mt-2 text-sm">Meet your future mentors who bring the lively, bubbling reality of Korea to you instead of textbook examples.</p>
           </div>
+          <div className="md:w-1/2 md:pr-12 pl-12 md:pl-0"></div>
         </div>
+
+        {/* Item 3 */}
+        <div className="relative flex flex-col md:flex-row gap-8 items-center">
+          <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-orange-500 border-4 border-white rounded-full z-10 shadow-sm"></div>
+          <div className="md:w-1/2 md:text-right md:pr-12 pl-12 md:pl-0">
+            <span className="inline-block bg-orange-100 text-orange-600 text-xs font-bold px-3 py-1 rounded-full mb-2">Topic 3</span>
+            <h3 className="text-xl font-bold text-brand-dark">AI-Assisted Trial Lesson</h3>
+            <p className="text-gray-600 mt-2 text-sm">Let's learn the first 5 most important phrases together! Test the translation system live.</p>
+          </div>
+          <div className="md:w-1/2 pl-12 md:pl-12"></div>
+        </div>
+
+        {/* Item 4 */}
+        <div className="relative flex flex-col md:flex-row-reverse gap-8 items-center">
+          <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-green-500 border-4 border-white rounded-full z-10 shadow-sm"></div>
+          <div className="md:w-1/2 md:text-left md:pl-12 pl-12">
+            <span className="inline-block bg-green-100 text-green-600 text-xs font-bold px-3 py-1 rounded-full mb-2">Bonus</span>
+            <h3 className="text-xl font-bold text-brand-dark">Special Offer 🎁</h3>
+            <p className="text-gray-600 mt-2 text-sm">A surprise reserved only for live participants!</p>
+          </div>
+          <div className="md:w-1/2 md:pr-12 pl-12 md:pl-0"></div>
+        </div>
+
       </div>
     </Section>
   )

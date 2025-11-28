@@ -1,6 +1,7 @@
+"use client";
 import Section from '../ui/Section'
 import { Check } from 'lucide-react'
-import { useLanguage } from '../../context/LanguageContext'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function Offer() {
   const { t } = useLanguage()

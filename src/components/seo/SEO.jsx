@@ -1,8 +1,9 @@
+"use client";
 import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { usePathname } from 'next/navigation'
 
 export default function SEO({ title, description }) {
-  const location = useLocation()
+  const pathname = usePathname()
 
   useEffect(() => {
     document.title = title ? `${title} | Annyeong Academy` : 'Annyeong Academy'

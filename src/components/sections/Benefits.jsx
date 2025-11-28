@@ -1,6 +1,7 @@
+"use client";
 import Section from '../ui/Section'
 import { Globe, MessageCircle, Utensils } from 'lucide-react'
-import { useLanguage } from '../../context/LanguageContext'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function Benefits() {
   const { t } = useLanguage()

@@ -1,7 +1,8 @@
+"use client";
 import { useState } from 'react'
 import { CheckCircle, XCircle, RefreshCw, Trophy } from 'lucide-react'
 import confetti from 'canvas-confetti'
-import { useLanguage } from '../../context/LanguageContext'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function QuizTaker({ quizData, onComplete }) {
   const { t } = useLanguage()

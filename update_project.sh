@@ -1,404 +1,708 @@
 #!/bin/bash
 
-# Update AdminDashboard.jsx to restrict file inputs to images only
-cat << 'EOF' > src/pages/admin/AdminDashboard.jsx
+echo "🇰🇷 Building Annyeong Academy Landing Page..."
+
+# Ensure directories exist
+mkdir -p src/components/sections
+mkdir -p src/app
+
+# ==============================================================================
+# 1. COUNTDOWN COMPONENT
+# ==============================================================================
+echo "⏳ Creating Countdown Component..."
+cat > src/components/sections/Countdown.jsx << 'EOF'
+"use client";
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
-import { useAuth } from '../../context/AuthContext'
-import { 
-  Upload, Package, LayoutList, Loader2, Trash2, RefreshCw, Users, 
-  Image as ImageIcon, Edit, X, FileText, Video, Mic, GraduationCap, 
-  PlusCircle, DollarSign, Megaphone, Calendar, HelpCircle, 
-  Mail, AlertTriangle 
-} from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { extractTag, cleanDescription, generateFilePath } from '../../lib/helpers'
+import Section from '../ui/Section'
 
-export default function AdminDashboard() {
-  const { isAdmin, loading: authLoading } = useAuth()
-  const navigate = useNavigate()
-  
-  const [activeTab, setActiveTab] = useState('lessons')
-  const [loading, setLoading] = useState(false)
-  const [editingId, setEditingId] = useState(null)
-  
-  // Data
-  const [courses, setCourses] = useState([])
-  const [allLessons, setAllLessons] = useState([])
-  const [allProducts, setAllProducts] = useState([])
-  const [leads, setLeads] = useState([])
-  const [messages, setMessages] = useState([])
-  const [users, setUsers] = useState([])
-  const [purchases, setPurchases] = useState([])
-  const [announcements, setAnnouncements] = useState([])
-
-  // Forms
-  const [lessonData, setLessonData] = useState({ 
-    title: "", course_id: "", video_url: "", quizlet_url: "", description: "", type: "video", pdf_url: "",
-    quiz_data: "" 
-  })
-  const [lessonMediaFile, setLessonMediaFile] = useState(null)
-  const [lessonPdfFile, setLessonPdfFile] = useState(null)
-  
-  const [productData, setProductData] = useState({ id: "", title: "", price: "", type: "course", description: "", image_url: "", zoom_link: "", download_link: "", event_date: "" })
-  const [productCoverFile, setProductCoverFile] = useState(null)
-  const [productEbookFile, setProductEbookFile] = useState(null)
-
-  const [announcementData, setAnnouncementData] = useState({ title: "", message: "", type: "info", active: true })
-  const [selectedCourseToEnroll, setSelectedCourseToEnroll] = useState("")
+export default function Countdown() {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) navigate('/dashboard')
-    fetchData()
-  }, [isAdmin, authLoading, navigate])
+    // Target: Dec 14, 11:00 AM (Current Year)
+    const currentYear = new Date().getFullYear();
+    const targetDate = new Date(`December 14, ${currentYear} 11:00:00`).getTime();
 
-  const fetchData = async () => {
-    setLoading(true)
-    try {
-      const { data: prodData } = await supabase.from('products').select('*').order('created_at', {ascending: false})
-      if (prodData) {
-        setAllProducts(prodData)
-        const courseList = prodData.filter(p => p.type === 'course')
-        setCourses(courseList)
-        if(courseList.length > 0 && !lessonData.course_id) setLessonData(prev => ({ ...prev, course_id: courseList[0].id }))
+    const interval = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = targetDate - now;
+
+      if (distance < 0) {
+        clearInterval(interval);
+      } else {
+        setTimeLeft({
+          days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((distance % (1000 * 60)) / 1000)
+        });
       }
-      const { data: lessData } = await supabase.from('lessons').select('*, products(title)').order('created_at', {ascending: false})
-      if (lessData) setAllLessons(lessData)
-      const { data: leadsData } = await supabase.from('webinar_leads').select('*').order('created_at', {ascending: false})
-      if (leadsData) setLeads(leadsData)
-      const { data: msgData } = await supabase.from('contact_messages').select('*').order('created_at', {ascending: false})
-      if (msgData) setMessages(msgData)
-      
-      // FIX: Sorted by updated_at because profiles doesn't have created_at
-      const { data: usersData } = await supabase.from('profiles').select('*').order('updated_at', {ascending: false})
-      if (usersData) setUsers(usersData)
-      
-      const { data: purchaseData } = await supabase.from('purchases').select('user_id, product_id')
-      if (purchaseData) setPurchases(purchaseData)
-      const { data: annData } = await supabase.from('announcements').select('*').order('created_at', {ascending: false})
-      if (annData) setAnnouncements(annData)
-    } catch(e) { console.error(e) }
-    setLoading(false)
-  }
+    }, 1000);
 
-  const uploadToStorage = async (file, bucket, folder) => {
-    if (!file) return null
-    const path = generateFilePath(folder, file)
-    const { error } = await supabase.storage.from(bucket).upload(path, file)
-    if (error) throw error
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-    return data.publicUrl
-  }
+    return () => clearInterval(interval);
+  }, []);
 
-  const handleManualEnroll = async (userId) => {
-    if (!selectedCourseToEnroll) return alert("Select a course first")
-    if (!window.confirm("Enroll user for free?")) return
-    setLoading(true)
-    const { error } = await supabase.from('purchases').insert([{ user_id: userId, product_id: selectedCourseToEnroll, status: 'completed' }])
-    setLoading(false)
-    if (error) alert(error.message)
-    else { alert("Enrolled!"); fetchData(); }
-  }
-
-  const handleSaveAnnouncement = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    const { error } = await supabase.from('announcements').insert([announcementData])
-    setLoading(false)
-    if (error) alert(error.message)
-    else { alert("Announcement posted!"); setAnnouncementData({ title: "", message: "", type: "info", active: true }); fetchData(); }
-  }
-
-  const startEditLesson = (l) => {
-    setEditingId(l.id)
-    setLessonData({
-      title: l.title, course_id: l.course_id, type: l.type || 'video',
-      video_url: l.video_url || "", pdf_url: l.pdf_url || "", quizlet_url: l.quizlet_url || "", description: l.description || "",
-      quiz_data: l.quiz_data ? JSON.stringify(l.quiz_data, null, 2) : ""
-    })
-    window.scrollTo(0,0)
-  }
-
-  const startEditProduct = (p) => {
-    setEditingId(p.id)
-    setProductData({
-      id: p.id, title: p.title, price: p.price, type: p.type,
-      description: cleanDescription(p.description),
-      image_url: p.image_url || "",
-      zoom_link: extractTag(p.description, 'ZOOM') || "",
-      download_link: extractTag(p.description, 'DOWNLOAD_URL') || "",
-      event_date: p.event_date ? new Date(p.event_date).toISOString().slice(0, 16) : ""
-    })
-    window.scrollTo(0,0)
-  }
-
-  const cancelEdit = () => {
-    setEditingId(null)
-    setProductData({ id: "", title: "", price: "", type: "course", description: "", image_url: "", zoom_link: "", download_link: "", event_date: "" })
-    setLessonData({ ...lessonData, title: "", video_url: "", pdf_url: "", quizlet_url: "", description: "", quiz_data: "" })
-    setLessonMediaFile(null); setLessonPdfFile(null); setProductCoverFile(null); setProductEbookFile(null)
-  }
-
-  const handleSaveProduct = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      let finalImage = productData.image_url
-      if (productCoverFile) finalImage = await uploadToStorage(productCoverFile, 'course-materials', 'covers')
-      let finalDownload = productData.download_link
-      if (productEbookFile) finalDownload = await uploadToStorage(productEbookFile, 'course-materials', 'ebooks')
-      let finalDesc = productData.description
-      if (productData.type === 'standalone' && productData.zoom_link) finalDesc += `\n\n[[ZOOM::${productData.zoom_link}]]`
-      if (productData.type === 'ebook' && finalDownload) finalDesc += `\n\n[[DOWNLOAD_URL::${finalDownload}]]`
-      
-      const payload = { 
-        title: productData.title, price: productData.price, type: productData.type, 
-        description: finalDesc, image_url: finalImage,
-        event_date: productData.event_date || null 
-      }
-      const pid = productData.id || productData.title.toLowerCase().replace(/[^a-z0-9]/g, '-')
-      if (editingId) await supabase.from('products').update(payload).eq('id', editingId)
-      else await supabase.from('products').insert([{ ...payload, id: pid }])
-      alert("Product saved!"); cancelEdit(); fetchData()
-    } catch (err) { alert(err.message) } finally { setLoading(false) }
-  }
-
-  const handleSaveLesson = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      let finalVideo = lessonData.video_url
-      if (lessonData.type === 'audio' && lessonMediaFile) finalVideo = await uploadToStorage(lessonMediaFile, 'course-materials', 'lessons/audio')
-      let finalPdf = lessonData.pdf_url
-      if (lessonPdfFile) finalPdf = await uploadToStorage(lessonPdfFile, 'course-materials', 'lessons/pdf')
-      
-      let parsedQuiz = null
-      if (lessonData.quiz_data.trim()) {
-        try { parsedQuiz = JSON.parse(lessonData.quiz_data) } catch { throw new Error("Invalid JSON for Quiz Data") }
-      }
-
-      const payload = { 
-        course_id: lessonData.course_id, title: lessonData.title, type: lessonData.type, 
-        video_url: finalVideo, pdf_url: finalPdf, quizlet_url: lessonData.quizlet_url, 
-        description: lessonData.description, quiz_data: parsedQuiz
-      }
-      
-      if (editingId) await supabase.from('lessons').update(payload).eq('id', editingId)
-      else await supabase.from('lessons').insert([payload])
-      alert("Lesson saved!"); cancelEdit(); fetchData()
-    } catch (err) { alert(err.message) } finally { setLoading(false) }
-  }
-
-  const handleDelete = async (table, id) => {
-    if(!window.confirm("Delete?")) return;
-    await supabase.from(table).delete().eq('id', id)
-    fetchData()
-  }
-
-  // Helper to separate Contacts from Reports
-  const contactsList = messages.filter(m => m.email !== 'system@report.com')
-  const reportsList = messages.filter(m => m.email === 'system@report.com')
-
-  if (authLoading || !isAdmin) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-brand-purple"/></div>
+  const scrollToForm = () => {
+    document.getElementById('registration').scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
-    <div className="max-w-7xl mx-auto pb-20">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-brand-dark">Admin Dashboard</h1>
-        <button onClick={fetchData} className="p-2 bg-white shadow-sm rounded-full hover:bg-gray-50 text-brand-purple"><RefreshCw size={20}/></button>
+    <section className="bg-brand-dark text-white py-8 px-4 text-center">
+      <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-center gap-6">
+        <div>
+          <p className="text-sm font-bold uppercase tracking-widest text-brand-blue mb-1">Don't miss out!</p>
+          <p className="text-xl font-medium">The trial class starts in:</p>
+        </div>
+        
+        <div className="flex gap-4 text-center">
+          {[
+            { label: 'Days', value: timeLeft.days },
+            { label: 'Hours', value: timeLeft.hours },
+            { label: 'Mins', value: timeLeft.minutes },
+            { label: 'Secs', value: timeLeft.seconds }
+          ].map((item, idx) => (
+            <div key={idx} className="bg-white/10 rounded-lg p-3 min-w-[70px] backdrop-blur-sm">
+              <span className="block text-2xl font-bold font-mono">{item.value}</span>
+              <span className="text-xs text-gray-400 uppercase">{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <button 
+          onClick={scrollToForm}
+          className="bg-brand-purple hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-full transition shadow-lg hover:shadow-purple-500/25 whitespace-nowrap"
+        >
+          Reserve my spot now!
+        </button>
+      </div>
+    </section>
+  )
+}
+EOF
+
+# ==============================================================================
+# 2. PAIN POINTS COMPONENT
+# ==============================================================================
+echo "😫 Creating Pain Points Component..."
+cat > src/components/sections/PainPoints.jsx << 'EOF'
+"use client";
+import Section from '../ui/Section'
+import { Tv, Music, Frown, ArrowDown } from 'lucide-react'
+
+export default function PainPoints() {
+  const scrollToForm = () => {
+    document.getElementById('registration').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const cards = [
+    {
+      icon: <Tv size={40} className="text-brand-purple" />,
+      title: "The Subtitle Addict",
+      text: "Do you love K-dramas but hate constantly reading subtitles, missing the actors' expressions? Do you want to finally understand the nuances that get lost in translation?"
+    },
+    {
+      icon: <Music size={40} className="text-brand-blue" />,
+      title: "The Music Lover",
+      text: "Is your playlist full of BTS or Stray Kids songs? Do you want to understand what they are singing about, write them a fan letter, or ask them a question they can actually understand?"
+    },
+    {
+      icon: <Frown size={40} className="text-orange-500" />,
+      title: "The Hesitant Beginner",
+      text: "Do you think you have no talent for languages? Did you struggle with languages in school and fear Korean will be the same? With us, that’s no longer an obstacle!"
+    }
+  ];
+
+  return (
+    <Section className="bg-white">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl md:text-4xl font-bold text-brand-dark">Does this feeling sound familiar?</h2>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"><div className="flex items-center gap-3 text-gray-500 mb-1"><GraduationCap size={18}/><span className="text-xs font-bold uppercase">Students</span></div><p className="text-2xl font-bold text-brand-dark">{users.length}</p></div>
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"><div className="flex items-center gap-3 text-gray-500 mb-1"><DollarSign size={18}/><span className="text-xs font-bold uppercase">Purchases</span></div><p className="text-2xl font-bold text-brand-dark">{purchases.length}</p></div>
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"><div className="flex items-center gap-3 text-gray-500 mb-1"><Users size={18}/><span className="text-xs font-bold uppercase">Leads</span></div><p className="text-2xl font-bold text-brand-dark">{leads.length}</p></div>
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100"><div className="flex items-center gap-3 text-gray-500 mb-1"><AlertTriangle size={18}/><span className="text-xs font-bold uppercase">Reports</span></div><p className="text-2xl font-bold text-brand-dark">{reportsList.length}</p></div>
-      </div>
-
-      <div className="flex gap-2 mb-8 border-b border-gray-200 overflow-x-auto pb-1">
-        {[
-          { id: 'lessons', icon: LayoutList, label: 'Lessons' },
-          { id: 'products', icon: Package, label: 'Products' },
-          { id: 'students', icon: GraduationCap, label: 'Students' },
-          { id: 'announce', icon: Megaphone, label: 'Announce' },
-          { id: 'leads', icon: Users, label: 'Leads' },
-          { id: 'contacts', icon: Mail, label: 'Contacts' },
-          { id: 'reports', icon: AlertTriangle, label: 'Reports' }
-        ].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 font-bold rounded-t-lg transition whitespace-nowrap ${activeTab === tab.id ? 'bg-brand-purple text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
-            <tab.icon size={18}/> {tab.label}
-          </button>
+      <div className="grid md:grid-cols-3 gap-8">
+        {cards.map((card, idx) => (
+          <div key={idx} className="bg-gray-50 rounded-3xl p-8 hover:shadow-xl transition duration-300 border border-transparent hover:border-brand-purple/20">
+            <div className="bg-white w-20 h-20 rounded-2xl flex items-center justify-center shadow-sm mb-6 mx-auto">
+              {card.icon}
+            </div>
+            <h3 className="text-xl font-bold text-brand-dark mb-4 text-center">{card.title}</h3>
+            <p className="text-gray-600 leading-relaxed text-center">{card.text}</p>
+          </div>
         ))}
       </div>
 
-      {/* TAB CONTENT */}
-      {activeTab === 'announce' && (
-        <div className="grid lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg border-t-4 border-orange-500 h-fit sticky top-24">
-              <h2 className="font-bold text-lg text-gray-800 mb-6">New Announcement</h2>
-              <form onSubmit={handleSaveAnnouncement} className="space-y-4">
-                <input required type="text" className="input-field" placeholder="Title" value={announcementData.title} onChange={e => setAnnouncementData({...announcementData, title: e.target.value})} />
-                <textarea required className="input-field" placeholder="Message..." rows="3" value={announcementData.message} onChange={e => setAnnouncementData({...announcementData, message: e.target.value})} />
-                <select className="input-field" value={announcementData.type} onChange={e => setAnnouncementData({...announcementData, type: e.target.value})}><option value="info">Info</option><option value="warning">Warning</option><option value="success">Success</option></select>
-                <button disabled={loading} type="submit" className="btn-primary w-full bg-orange-500 hover:bg-orange-600">{loading ? "..." : "Post"}</button>
-              </form>
-           </div>
-           <div className="lg:col-span-2 space-y-3">{announcements.map(ann => (<div key={ann.id} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center"><div><h4 className="font-bold">{ann.title}</h4><p className="text-sm text-gray-600">{ann.message}</p></div><button onClick={() => handleDelete('announcements', ann.id)} className="text-red-500"><Trash2 size={18}/></button></div>))}</div>
-        </div>
-      )}
+      <div className="text-center mt-12">
+        <button 
+          onClick={scrollToForm}
+          className="inline-flex items-center gap-2 bg-brand-dark text-white font-bold py-4 px-10 rounded-xl hover:bg-gray-800 transition shadow-lg transform hover:-translate-y-1"
+        >
+          I need this! <ArrowDown size={20} />
+        </button>
+      </div>
+    </Section>
+  )
+}
+EOF
 
-      {activeTab === 'students' && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 overflow-x-auto">
-             <div className="flex items-center gap-2 mb-4"><select className="input-field" value={selectedCourseToEnroll} onChange={(e) => setSelectedCourseToEnroll(e.target.value)}><option value="">Select Course...</option>{courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</select></div>
-             <table className="w-full text-sm text-left"><thead className="text-gray-400 font-bold bg-gray-50"><tr><th className="p-4">User</th><th className="p-4">Role</th><th className="p-4 text-right">Action</th></tr></thead>
-             <tbody>{users.map(u => (<tr key={u.id} className="border-t"><td className="p-4"><p className="font-bold">{u.full_name}</p><p className="text-xs text-gray-400">{u.email}</p></td><td className="p-4">{u.role}</td><td className="p-4 text-right"><button onClick={() => handleManualEnroll(u.id)} className="text-green-600 bg-green-50 px-3 py-1 rounded font-bold text-xs">Enroll</button></td></tr>))}</tbody></table>
+# ==============================================================================
+# 3. METHOD COMPONENT
+# ==============================================================================
+echo "💡 Creating Method Component..."
+cat > src/components/sections/Method.jsx << 'EOF'
+"use client";
+import Section from '../ui/Section'
+import { Clapperboard, MapPin, MessageCircle, Rocket } from 'lucide-react'
+
+export default function Method() {
+  const scrollToForm = () => {
+    document.getElementById('registration').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <Section className="bg-[#F8F9FC]">
+      <div className="text-center mb-16">
+        <h2 className="text-3xl md:text-4xl font-bold text-brand-dark">How does it work in practice?</h2>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-8 md:gap-12">
+        {/* Item 1 */}
+        <div className="flex gap-6 items-start">
+          <div className="flex-shrink-0 w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center text-brand-purple">
+            <Clapperboard size={32} />
           </div>
-      )}
-
-      {activeTab === 'lessons' && (
-        <div className="grid lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg border-t-4 border-brand-purple h-fit sticky top-24">
-              <h2 className="font-bold text-lg text-gray-800 mb-6">{editingId ? 'Edit' : 'New'} Lesson</h2>
-              <form onSubmit={handleSaveLesson} className="space-y-4">
-                <select className="input-field" value={lessonData.course_id} onChange={e => setLessonData({...lessonData, course_id: e.target.value})}>{courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</select>
-                <input required type="text" className="input-field" placeholder="Title" value={lessonData.title} onChange={e => setLessonData({...lessonData, title: e.target.value})} />
-                <select className="input-field" value={lessonData.type} onChange={e => setLessonData({...lessonData, type: e.target.value})}><option value="video">Video</option><option value="audio">Audio</option></select>
-                {lessonData.type === 'video' ? <input type="url" className="input-field" placeholder="Video URL" value={lessonData.video_url} onChange={e => setLessonData({...lessonData, video_url: e.target.value})} /> : <input type="file" className="input-field" onChange={e => setLessonMediaFile(e.target.files[0])} />}
-                <input type="file" className="input-field" onChange={e => setLessonPdfFile(e.target.files[0])} />
-                <textarea className="input-field" placeholder="Desc" rows="3" value={lessonData.description} onChange={e => setLessonData({...lessonData, description: e.target.value})} />
-                <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                   <label className="label flex items-center gap-1 text-brand-purple"><HelpCircle size={14}/> Quiz Data (JSON)</label>
-                   <textarea className="input-field text-xs font-mono" placeholder='[{"question":"...","options":["..."],"correct":0}]' rows="3" value={lessonData.quiz_data} onChange={e => setLessonData({...lessonData, quiz_data: e.target.value})} />
-                </div>
-                <button disabled={loading} type="submit" className="btn-primary w-full">{loading ? "Saving..." : "Save"}</button>
-                {editingId && <button type="button" onClick={cancelEdit} className="w-full text-sm text-gray-500 mt-2">Cancel</button>}
-              </form>
-           </div>
-           <div className="lg:col-span-2 space-y-3">{allLessons.map(l => (<div key={l.id} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center"><div><h4 className="font-bold">{l.title}</h4><p className="text-xs text-gray-500">{l.products?.title} {l.quiz_data && '• Quiz Active'}</p></div><div className="flex gap-2"><button onClick={() => startEditLesson(l)} className="text-blue-500"><Edit size={18}/></button><button onClick={() => handleDelete('lessons', l.id)} className="text-red-500"><Trash2 size={18}/></button></div></div>))}</div>
+          <div>
+            <h3 className="text-xl font-bold text-brand-dark mb-2">K-Culture instead of Textbooks</h3>
+            <p className="text-gray-600 leading-relaxed">
+              We don’t fill out boring worksheets! The curriculum is built on your favorite K-pop songs, K-drama scenes, and variety shows. Since your teacher is Korean and lives in Seoul, they bring you real daily life, the freshest slang, and vibrant culture, not dry theory.
+            </p>
+          </div>
         </div>
-      )}
 
-      {activeTab === 'products' && (
-        <div className="grid lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg border-t-4 border-brand-blue h-fit sticky top-24">
-              <h2 className="font-bold text-lg text-gray-800 mb-6">{editingId ? 'Edit' : 'New'} Product</h2>
-              <form onSubmit={handleSaveProduct} className="space-y-4">
-                <input required type="text" className="input-field" placeholder="Title" value={productData.title} onChange={e => setProductData({...productData, title: e.target.value})} />
-                <input required type="text" className="input-field" placeholder="Price" value={productData.price} onChange={e => setProductData({...productData, price: e.target.value})} />
-                <select className="input-field" value={productData.type} onChange={e => setProductData({...productData, type: e.target.value})}><option value="course">Course</option><option value="ebook">Ebook</option><option value="standalone">Live</option></select>
-                {!editingId && <input type="text" className="input-field" placeholder="ID" value={productData.id} onChange={e => setProductData({...productData, id: e.target.value})} />}
-                
-                {productData.type === 'standalone' && (
-                   <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                      <label className="label text-brand-blue flex items-center gap-1"><Calendar size={14}/> Event Date</label>
-                      <input type="datetime-local" className="input-field bg-white" value={productData.event_date} onChange={e => setProductData({...productData, event_date: e.target.value})} />
-                      <input type="url" className="input-field bg-white mt-2" placeholder="Zoom Link" value={productData.zoom_link} onChange={e => setProductData({...productData, zoom_link: e.target.value})} />
-                   </div>
-                )}
-
-                {/* FIXED COVER IMG INPUT */}
-                <div className="file-input-wrapper">
-                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 w-full">
-                    <ImageIcon size={16}/> 
-                    <span>{productCoverFile ? productCoverFile.name : "Cover Img (.jpg/.png)"}</span>
-                    <input type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={e => setProductCoverFile(e.target.files[0])} />
-                  </label>
-                </div>
-
-                {/* ADDED EBOOK INPUT */}
-                {productData.type === 'ebook' && (
-                  <div className="file-input-wrapper bg-purple-50 border-purple-100">
-                    <label className="flex items-center gap-2 cursor-pointer text-sm text-brand-purple w-full font-bold">
-                      <FileText size={16}/> 
-                      <span>{productEbookFile ? productEbookFile.name : "Upload PDF (Ebook)"}</span>
-                      <input type="file" className="hidden" accept="application/pdf" onChange={e => setProductEbookFile(e.target.files[0])} />
-                    </label>
-                  </div>
-                )}
-
-                <textarea className="input-field" placeholder="Desc" rows="4" value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} />
-                <button disabled={loading} type="submit" className="btn-primary w-full bg-brand-blue">{loading ? "Saving..." : "Save"}</button>
-                {editingId && <button type="button" onClick={cancelEdit} className="w-full text-sm text-gray-500 mt-2">Cancel</button>}
-              </form>
-           </div>
-           <div className="lg:col-span-2 space-y-3">{allProducts.map(p => (
-              <div key={p.id} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center">
-                 <div>
-                    <h4 className="font-bold">{p.title}</h4>
-                    <p className="text-xs text-gray-500">{p.type} • {p.price}</p>
-                    {p.event_date && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold mt-1 inline-block">{new Date(p.event_date).toLocaleString()}</span>}
-                 </div>
-                 <div className="flex gap-2"><button onClick={() => startEditProduct(p)} className="text-blue-500"><Edit size={18}/></button><button onClick={() => handleDelete('products', p.id)} className="text-red-500"><Trash2 size={18}/></button></div>
-              </div>
-           ))}</div>
+        {/* Item 2 */}
+        <div className="flex gap-6 items-start">
+          <div className="flex-shrink-0 w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-brand-blue">
+            <MapPin size={32} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-brand-dark mb-2">Native Environment</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Immerse yourself completely in the language! Your teacher speaks in Korean and explains concepts in English, ensuring you hear the purest, most authentic pronunciation from day one. You will pick up the natural rhythm and intonation.
+            </p>
+          </div>
         </div>
-      )}
 
-      {activeTab === 'leads' && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm">
-          {leads.map(l => (
-            <div key={l.id} className="border-b py-3 last:border-0 flex justify-between items-center">
-              <div>
-                <p className="font-bold text-gray-800">{l.full_name}</p>
-                <p className="text-xs text-gray-500">{l.email} • {l.webinar_date}</p>
-              </div>
-              <span className="text-xs bg-green-50 text-green-600 px-2 py-1 rounded font-bold">Lead</span>
+        {/* Item 3 */}
+        <div className="flex gap-6 items-start">
+          <div className="flex-shrink-0 w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center text-green-600">
+            <MessageCircle size={32} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-brand-dark mb-2">Real-Time Translation</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Don't worry about getting lost! Every explanation appears instantly on your screen as translated subtitles in real-time. It feels just like watching your favorite series with subs, bridging the gap between you and the teacher.
+            </p>
+          </div>
+        </div>
+
+        {/* Item 4 */}
+        <div className="flex gap-6 items-start">
+          <div className="flex-shrink-0 w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-500">
+            <Rocket size={32} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-brand-dark mb-2">Simple Technology</h3>
+            <p className="text-gray-600 leading-relaxed">
+              You don’t need to be a tech genius. Our smart platform runs smoothly in your web browser, handling the live connection and subtitles automatically. If you can click a link, you are ready to go!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-center mt-16">
+        <button 
+          onClick={scrollToForm}
+          className="bg-gradient-to-r from-brand-blue to-brand-purple text-white font-bold py-4 px-12 rounded-full shadow-lg hover:opacity-90 transition transform hover:scale-105"
+        >
+          Hwaiting, I'll be there!
+        </button>
+      </div>
+    </Section>
+  )
+}
+EOF
+
+# ==============================================================================
+# 4. UPDATING AGENDA
+# ==============================================================================
+echo "📅 Updating Agenda..."
+cat > src/components/sections/Agenda.jsx << 'EOF'
+"use client";
+import Section from '../ui/Section'
+
+export default function Agenda() {
+  return (
+    <Section className="bg-white">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl font-bold text-brand-dark">What awaits you at the free event?</h2>
+      </div>
+
+      <div className="max-w-4xl mx-auto space-y-8 relative before:absolute before:left-4 md:before:left-1/2 before:top-2 before:h-full before:w-0.5 before:bg-gray-200 before:-translate-x-1/2">
+        
+        {/* Item 1 */}
+        <div className="relative flex flex-col md:flex-row gap-8 items-center">
+          <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-brand-purple border-4 border-white rounded-full z-10 shadow-sm"></div>
+          <div className="md:w-1/2 md:text-right md:pr-12 pl-12 md:pl-0">
+            <span className="inline-block bg-purple-100 text-brand-purple text-xs font-bold px-3 py-1 rounded-full mb-2">Topic 1</span>
+            <h3 className="text-xl font-bold text-brand-dark">Exclusive Cultural Insight</h3>
+            <p className="text-gray-600 mt-2 text-sm italic">What are Koreans like in real life vs. how we see them in K-dramas?</p>
+          </div>
+          <div className="md:w-1/2 pl-12 md:pl-12">
+            <div className="bg-gray-50 p-6 rounded-2xl text-sm text-gray-600 border border-gray-100">
+              <ul className="list-disc ml-4 space-y-1">
+                <li>The "Oppa" Myth: Are Korean men really romantic?</li>
+                <li>Hierarchy & Respect: Age vs. Rank.</li>
+                <li>Seoul by Night: The truth about <i>hoesik</i> culture.</li>
+                <li>Chaebols & Plastic Surgery: Fact vs. Fiction.</li>
+              </ul>
             </div>
+          </div>
+        </div>
+
+        {/* Item 2 */}
+        <div className="relative flex flex-col md:flex-row-reverse gap-8 items-center">
+          <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-brand-blue border-4 border-white rounded-full z-10 shadow-sm"></div>
+          <div className="md:w-1/2 md:text-left md:pl-12 pl-12">
+            <span className="inline-block bg-blue-100 text-brand-blue text-xs font-bold px-3 py-1 rounded-full mb-2">Topic 2</span>
+            <h3 className="text-xl font-bold text-brand-dark">Meet the Tutors</h3>
+            <p className="text-gray-600 mt-2 text-sm">Meet your future mentors who bring the lively, bubbling reality of Korea to you instead of textbook examples.</p>
+          </div>
+          <div className="md:w-1/2 md:pr-12 pl-12 md:pl-0"></div>
+        </div>
+
+        {/* Item 3 */}
+        <div className="relative flex flex-col md:flex-row gap-8 items-center">
+          <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-orange-500 border-4 border-white rounded-full z-10 shadow-sm"></div>
+          <div className="md:w-1/2 md:text-right md:pr-12 pl-12 md:pl-0">
+            <span className="inline-block bg-orange-100 text-orange-600 text-xs font-bold px-3 py-1 rounded-full mb-2">Topic 3</span>
+            <h3 className="text-xl font-bold text-brand-dark">AI-Assisted Trial Lesson</h3>
+            <p className="text-gray-600 mt-2 text-sm">Let's learn the first 5 most important phrases together! Test the translation system live.</p>
+          </div>
+          <div className="md:w-1/2 pl-12 md:pl-12"></div>
+        </div>
+
+        {/* Item 4 */}
+        <div className="relative flex flex-col md:flex-row-reverse gap-8 items-center">
+          <div className="absolute left-4 md:left-1/2 -translate-x-1/2 w-8 h-8 bg-green-500 border-4 border-white rounded-full z-10 shadow-sm"></div>
+          <div className="md:w-1/2 md:text-left md:pl-12 pl-12">
+            <span className="inline-block bg-green-100 text-green-600 text-xs font-bold px-3 py-1 rounded-full mb-2">Bonus</span>
+            <h3 className="text-xl font-bold text-brand-dark">Special Offer 🎁</h3>
+            <p className="text-gray-600 mt-2 text-sm">A surprise reserved only for live participants!</p>
+          </div>
+          <div className="md:w-1/2 md:pr-12 pl-12 md:pl-0"></div>
+        </div>
+
+      </div>
+    </Section>
+  )
+}
+EOF
+
+# ==============================================================================
+# 5. UPDATING TESTIMONIALS
+# ==============================================================================
+echo "💬 Updating Testimonials..."
+cat > src/components/sections/Testimonials.jsx << 'EOF'
+"use client";
+import Section from '../ui/Section'
+import { Quote } from 'lucide-react'
+
+export default function Testimonials() {
+  return (
+    <Section className="bg-[#F8F9FC]">
+      <div className="text-center mb-12">
+        <h2 className="text-3xl font-bold text-brand-dark">Social Proof</h2>
+      </div>
+      
+      <div className="flex flex-wrap justify-center gap-8">
+        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md flex-1 min-w-[300px] relative">
+          <Quote className="w-10 h-10 text-brand-purple absolute top-6 left-6 opacity-20" />
+          <p className="text-gray-700 italic mb-6 text-lg relative z-10 pt-4">
+            "Finally, I don't need to be fluent in English to learn Korean! This technology is incredible."
+          </p>
+          <div className="font-bold text-brand-dark border-l-4 border-brand-purple pl-3">
+            – Susie
+          </div>
+        </div>
+
+        <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md flex-1 min-w-[300px] relative">
+          <Quote className="w-10 h-10 text-brand-blue absolute top-6 left-6 opacity-20" />
+          <p className="text-gray-700 italic mb-6 text-lg relative z-10 pt-4">
+            "I love that the teacher connects live from Seoul. It feels like I'm actually there."
+          </p>
+          <div className="font-bold text-brand-dark border-l-4 border-brand-blue pl-3">
+            – Esther
+          </div>
+        </div>
+      </div>
+    </Section>
+  )
+}
+EOF
+
+# ==============================================================================
+# 6. UPDATING TEACHERS
+# ==============================================================================
+echo "👩‍🏫 Updating Teachers..."
+cat > src/components/sections/Teachers.jsx << 'EOF'
+"use client";
+import Section from '../ui/Section'
+
+export default function Teachers() {
+  return (
+    <Section className="bg-[#F8F9FC]">
+      <div className="text-center mb-16">
+        <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-4">Who will you learn from?</h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Native teachers who currently live in Korea. They don't teach from a 10-year-old textbook but deliver the living language of today. Their mission is to share their love for their culture with you – without language barriers.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-12">
+        <div className="bg-white p-0 rounded-3xl shadow-lg max-w-sm text-center overflow-hidden group">
+          <div className="h-64 bg-gray-200 relative overflow-hidden">
+             {/* Placeholder for Tutor 1 Image */}
+             <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-100">
+               <span className="font-bold">Image Placeholder</span>
+             </div>
+          </div>
+          <div className="p-8">
+            <h3 className="text-2xl font-bold text-brand-dark mb-2">Tutor 1</h3>
+            <p className="text-gray-600 italic">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white p-0 rounded-3xl shadow-lg max-w-sm text-center overflow-hidden group">
+          <div className="h-64 bg-gray-200 relative overflow-hidden">
+             {/* Placeholder for Tutor 2 Image */}
+             <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-100">
+               <span className="font-bold">Image Placeholder</span>
+             </div>
+          </div>
+          <div className="p-8">
+            <h3 className="text-2xl font-bold text-brand-dark mb-2">Tutor 2</h3>
+            <p className="text-gray-600 italic">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            </p>
+          </div>
+        </div>
+      </div>
+    </Section>
+  )
+}
+EOF
+
+# ==============================================================================
+# 7. UPDATING FAQ
+# ==============================================================================
+echo "❓ Updating FAQ..."
+cat > src/components/sections/FAQ.jsx << 'EOF'
+"use client";
+import Section from '../ui/Section'
+
+export default function FAQ() {
+  const items = [
+    {
+      q: "Do I need to install anything on my computer?",
+      a: "Not necessarily, the system works from a browser, but we help with everything regarding the connection!"
+    },
+    {
+      q: "Does the translation really work?",
+      a: "Yes! Come and test it yourself. That’s exactly why we are holding this trial class, so you can see: you can do this too."
+    },
+    {
+      q: "Am I too old/young for this?",
+      a: "The love for Korean culture has no age limit. Our groups are inclusive, and the technology helps everyone."
+    }
+  ];
+
+  return (
+    <Section className="bg-white">
+      <div className="max-w-3xl mx-auto">
+        <h2 className="text-3xl font-bold text-brand-dark mb-8 text-center">FAQ</h2>
+        
+        <div className="space-y-4">
+          {items.map((item, i) => (
+            <details key={i} className="group bg-gray-50 p-6 rounded-2xl shadow-sm cursor-pointer open:ring-2 open:ring-brand-purple/20 transition">
+              <summary className="font-bold text-lg text-brand-dark list-none flex justify-between items-center">
+                {item.q}
+                <span className="text-brand-purple group-open:rotate-180 transition text-2xl">▼</span>
+              </summary>
+              <p className="text-gray-600 mt-4 leading-relaxed">
+                {item.a}
+              </p>
+            </details>
           ))}
         </div>
-      )}
+      </div>
+    </Section>
+  )
+}
+EOF
 
-      {/* CONTACTS TAB */}
-      {activeTab === 'contacts' && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm">
-          <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2"><Mail size={20}/> Contact Messages</h3>
-          {contactsList.length === 0 && <p className="text-gray-400">No messages.</p>}
-          {contactsList.map(m => (
-            <div key={m.id} className="border-b border-gray-100 py-4 last:border-0 hover:bg-gray-50 px-2 -mx-2 rounded transition">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-bold text-brand-dark">{m.name}</p>
-                  <p className="text-xs text-gray-500">{m.email} • {new Date(m.created_at).toLocaleDateString()}</p>
-                </div>
-                <button onClick={() => handleDelete('contact_messages', m.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={16}/></button>
-              </div>
-              <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">{m.message}</p>
-            </div>
-          ))}
+# ==============================================================================
+# 8. UPDATING WEBINAR FORM
+# ==============================================================================
+echo "📝 Updating Webinar Form..."
+cat > src/components/WebinarForm.jsx << 'EOF'
+"use client";
+import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { Loader2, CheckCircle, Lock } from 'lucide-react'
+
+export default function WebinarForm() {
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [formData, setFormData] = useState({
+    full_name: "",
+    email: "",
+    gdpr_consent: false
+  })
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!formData.gdpr_consent) return alert("You must read the Privacy Policy")
+    
+    setLoading(true)
+    const { error } = await supabase.from('webinar_leads').insert([formData])
+    setLoading(false)
+
+    if (error) {
+      alert("Registration error: " + error.message)
+    } else {
+      setSuccess(true)
+    }
+  }
+
+  if (success) {
+    return (
+      <div className="bg-white p-10 rounded-2xl shadow-xl text-center border-t-4 border-green-500 animate-fade-in">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle className="w-10 h-10 text-green-600" />
         </div>
-      )}
+        <h3 className="text-2xl font-bold text-brand-dark mb-2">You're in! 🎉</h3>
+        <p className="text-gray-600">We'll send the Zoom link to your email shortly.</p>
+      </div>
+    )
+  }
 
-      {/* REPORTS TAB */}
-      {activeTab === 'reports' && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-red-500">
-          <h3 className="font-bold text-red-600 mb-4 flex items-center gap-2"><AlertTriangle size={20}/> Content Issues</h3>
-          {reportsList.length === 0 && <p className="text-gray-400">No active reports. Good job!</p>}
-          {reportsList.map(m => (
-            <div key={m.id} className="border-b border-red-50 py-4 last:border-0">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded mb-2 inline-block">BUG REPORT</span>
-                  <p className="font-bold text-gray-800 text-sm mb-1">{new Date(m.created_at).toLocaleString()}</p>
-                  <p className="text-sm text-gray-700 font-mono bg-red-50/50 p-3 rounded border border-red-100">{m.message}</p>
-                </div>
-                <button onClick={() => handleDelete('contact_messages', m.id)} className="text-gray-300 hover:text-red-500 ml-4"><Trash2 size={18}/></button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 rounded-3xl shadow-2xl max-w-md mx-auto border-t-8 border-brand-purple relative z-20">
+      <div className="text-center mb-6">
+        <h3 className="text-2xl font-bold text-brand-dark">Enter the world of K-Culture!</h3>
+        <p className="text-sm text-gray-500 mt-2">Without obstacles. Spots are limited!</p>
+      </div>
+      
+      <div>
+        <label className="block text-sm font-bold text-gray-700 mb-1">Name</label>
+        <input 
+          required
+          type="text"
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none bg-gray-50 focus:bg-white transition"
+          value={formData.full_name}
+          onChange={e => setFormData({...formData, full_name: e.target.value})}
+        />
+      </div>
 
-      <style>{`
-        .label { display: block; font-size: 0.85rem; font-weight: bold; color: #4b5563; margin-bottom: 0.3rem; }
-        .input-field { width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; outline: none; font-size: 0.9rem; transition: all 0.2s; }
-        .input-field:focus { border-color: #6a11cb; ring: 2px solid #6a11cb33; }
-        .btn-primary { background: #192335; color: white; font-weight: bold; padding: 0.8rem; border-radius: 0.5rem; transition: opacity 0.2s; }
-        .btn-primary:hover { opacity: 0.9; }
-        .file-input-wrapper { border: 1px solid #e5e7eb; padding: 0.75rem; border-radius: 0.5rem; background: #f9fafb; transition: background 0.2s; }
-        .file-input-wrapper:hover { background: #f3f4f6; }
-      `}</style>
+      <div>
+        <label className="block text-sm font-bold text-gray-700 mb-1">Email Address</label>
+        <input 
+          required
+          type="email"
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none bg-gray-50 focus:bg-white transition"
+          value={formData.email}
+          onChange={e => setFormData({...formData, email: e.target.value})}
+        />
+      </div>
+
+      <div className="flex items-start gap-3">
+        <input 
+          required
+          type="checkbox" 
+          id="gdpr"
+          className="mt-1 w-4 h-4 text-brand-purple rounded border-gray-300 focus:ring-brand-purple cursor-pointer"
+          checked={formData.gdpr_consent}
+          onChange={e => setFormData({...formData, gdpr_consent: e.target.checked})}
+        />
+        <label htmlFor="gdpr" className="text-xs text-gray-500 leading-relaxed cursor-pointer select-none">
+          I have read the <a href="/privacy" className="underline hover:text-brand-purple">Privacy Policy</a>.
+        </label>
+      </div>
+
+      <button 
+        disabled={loading}
+        type="submit" 
+        className="w-full bg-brand-purple text-white font-bold py-4 rounded-xl hover:bg-brand-dark disabled:opacity-50 flex justify-center items-center shadow-lg hover:shadow-xl transition transform active:scale-95"
+      >
+        {loading ? <Loader2 className="animate-spin" /> : "Send me my ZOOM link!"}
+      </button>
+      
+      <p className="text-center text-xs text-gray-400 flex items-center justify-center gap-1">
+        <Lock size={12} /> Your data is safe.
+      </p>
+    </form>
+  )
+}
+EOF
+
+# ==============================================================================
+# 9. STICKY MOBILE BAR
+# ==============================================================================
+echo "📱 Creating Sticky Mobile Bar..."
+cat > src/components/sections/StickyBar.jsx << 'EOF'
+"use client";
+import { useState, useEffect } from 'react'
+
+export default function StickyBar() {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show only after scrolling past header (100px)
+      if (window.scrollY > 100) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToForm = () => {
+    document.getElementById('registration').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] z-50 flex items-center justify-between animate-slide-up">
+      <div className="text-sm font-bold text-brand-dark">
+        Free Korean Trial + <br/> AI Translation
+      </div>
+      <button 
+        onClick={scrollToForm}
+        className="bg-brand-purple text-white px-6 py-2 rounded-lg font-bold shadow-md"
+      >
+        Sign Up
+      </button>
     </div>
   )
 }
 EOF
+
+# ==============================================================================
+# 10. ASSEMBLING MAIN PAGE
+# ==============================================================================
+echo "🚀 Assembling Main Page..."
+cat > src/app/page.jsx << 'EOF'
+"use client";
+import Navbar from '@/components/sections/Navbar'
+import Footer from '@/components/sections/Footer'
+import Countdown from '@/components/sections/Countdown'
+import PainPoints from '@/components/sections/PainPoints'
+import Method from '@/components/sections/Method'
+import Teachers from '@/components/sections/Teachers'
+import Agenda from '@/components/sections/Agenda'
+import Offer from '@/components/sections/Offer'
+import Testimonials from '@/components/sections/Testimonials'
+import FAQ from '@/components/sections/FAQ'
+import WebinarForm from '@/components/WebinarForm'
+import StickyBar from '@/components/sections/StickyBar'
+
+export default function LandingPage() {
+  const scrollToForm = () => {
+    document.getElementById('registration').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F8F9FC] font-sans text-gray-800 flex flex-col">
+      <Navbar />
+
+      <main className="flex-grow">
+        
+        {/* HERO SECTION */}
+        <section className="relative pt-32 pb-20 px-4 overflow-hidden bg-white">
+          <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
+            
+            <div className="space-y-6 text-center lg:text-left">
+              <h1 className="text-4xl md:text-6xl font-extrabold text-brand-dark leading-tight">
+                Learn Korean directly from Seoul <br/>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-purple">
+                  no language barriers!
+                </span>
+              </h1>
+              
+              <p className="text-lg text-gray-600 max-w-xl mx-auto lg:mx-0 font-medium">
+                Free, interactive trial class with a native Korean tutor and real-time translation.
+              </p>
+
+              <button 
+                onClick={scrollToForm}
+                className="bg-brand-purple text-white px-8 py-4 rounded-full font-bold text-lg shadow-xl hover:bg-brand-dark transition transform hover:-translate-y-1"
+              >
+                Get my free trial!
+              </button>
+            </div>
+
+            {/* Hero Image/Video Placeholder */}
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white rotate-2 hover:rotate-0 transition duration-500">
+               <img 
+                 src="https://placehold.co/600x400/6a11cb/ffffff?text=Native+Teacher+Waving" 
+                 alt="Teacher Waving" 
+                 className="w-full h-full object-cover"
+               />
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 0: INTRO */}
+        <section className="py-16 px-4 bg-gray-50">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-2xl font-bold text-brand-dark mb-6">An Interactive Glimpse into the Future of Language Learning</h2>
+            <p className="text-gray-600 leading-relaxed text-lg">
+              Forget boring textbooks! In this live event, we’ll show you what it’s like to learn using your favorite K-dramas and K-pop songs, not through rote memorization. This is your chance to try this innovation risk-free. You just sit back, your teacher (who can’t wait to meet you!) speaks in Korean, and the "magic" happens right before your eyes with real-time subtitles. Come and experience the chemistry, and see for yourself that language learning can be the most fun part of your day.
+            </p>
+          </div>
+        </section>
+
+        <Countdown />
+        <PainPoints />
+        <Method />
+        <Testimonials />
+        <Agenda />
+        <Teachers />
+        <FAQ />
+
+        {/* SECTION 8: SIGN UP FORM */}
+        <section id="registration" className="py-20 px-4 bg-gradient-to-br from-brand-blue to-brand-purple relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+          <div className="max-w-4xl mx-auto relative z-10 text-center">
+            <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl inline-block w-full max-w-lg">
+               <WebinarForm />
+            </div>
+          </div>
+        </section>
+
+      </main>
+      
+      <StickyBar />
+      <Footer />
+    </div>
+  )
+}
+EOF
+
+echo "✅ Landing Page Built Successfully!"
+echo "👉 Run 'npm run dev' to view the changes."

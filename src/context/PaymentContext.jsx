@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react'
-import PaymentModal from '../components/payment/PaymentModal'
+import PaymentModal from '@/components/payment/PaymentModal'
 import { useAuth } from './AuthContext'
 import { useToast } from './ToastContext'
 

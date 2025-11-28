@@ -1,27 +1,29 @@
+"use client";
+import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import { useLanguage } from '../../context/LanguageContext'
+import Link from 'next/link'
+import { useAuth } from '@/context/AuthContext'
+import { useLanguage } from '@/context/LanguageContext'
 import { LayoutDashboard, BookOpen, Calendar, LogOut, User, ShieldCheck, ShoppingBag, Settings, Download, Menu, X, Trophy, StickyNote } from 'lucide-react'
 import AnnouncementBanner from '../ui/AnnouncementBanner'
 
 export default function AppLayout() {
   const { signOut, user, profile, isAdmin } = useAuth()
   const { t } = useLanguage()
-  const location = useLocation()
-  const navigate = useNavigate()
+  const pathname = usePathname()
+  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleLogout = async () => {
     await signOut()
-    navigate('/login')
+    router.push('/login')
   }
 
   const NavItem = ({ to, icon: Icon, label }) => {
-    const isActive = location.pathname === to
+    const isActive = pathname === to
     return (
       <Link 
-        to={to} 
+        href={to} 
         onClick={() => setMobileOpen(false)}
         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
           isActive ? 'bg-brand-purple text-white shadow-md' : 'text-gray-600 hover:bg-purple-50 hover:text-brand-purple'
@@ -53,19 +55,19 @@ export default function AppLayout() {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
-          <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav_dashboard')} />
-          <NavItem to="/corsi" icon={BookOpen} label={t('nav_courses')} />
-          <NavItem to="/notebook" icon={StickyNote} label={t('nav_notebook')} />
-          <NavItem to="/leaderboard" icon={Trophy} label={t('nav_leaderboard')} />
-          <NavItem to="/lezioni-live" icon={Calendar} label={t('nav_live')} />
-          <NavItem to="/store" icon={ShoppingBag} label={t('nav_store')} />
-          <NavItem to="/downloads" icon={Download} label={t('nav_downloads')} />
-          <NavItem to="/profile" icon={Settings} label={t('nav_profile')} />
+          <NavItem href="/dashboard" icon={LayoutDashboard} label={t('nav_dashboard')} />
+          <NavItem href="/corsi" icon={BookOpen} label={t('nav_courses')} />
+          <NavItem href="/notebook" icon={StickyNote} label={t('nav_notebook')} />
+          <NavItem href="/leaderboard" icon={Trophy} label={t('nav_leaderboard')} />
+          <NavItem href="/lezioni-live" icon={Calendar} label={t('nav_live')} />
+          <NavItem href="/store" icon={ShoppingBag} label={t('nav_store')} />
+          <NavItem href="/downloads" icon={Download} label={t('nav_downloads')} />
+          <NavItem href="/profile" icon={Settings} label={t('nav_profile')} />
           
           {isAdmin && (
             <div className="pt-4 mt-4 border-t border-gray-100">
                <p className="px-4 text-xs font-bold text-gray-400 uppercase mb-2">{t('nav_admin')}</p>
-               <NavItem to="/admin" icon={ShieldCheck} label={t('nav_management')} />
+               <NavItem href="/admin" icon={ShieldCheck} label={t('nav_management')} />
             </div>
           )}
         </nav>

@@ -1,6 +1,7 @@
+"use client";
 import { useState, useEffect } from 'react'
 import { RefreshCw, Check, X } from 'lucide-react'
-import { useLanguage } from '../../context/LanguageContext'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function VocabularyDrill({ description }) {
   const { t } = useLanguage()

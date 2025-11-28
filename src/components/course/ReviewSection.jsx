@@ -1,9 +1,10 @@
+"use client";
 import { useState, useEffect } from 'react'
 import { Star, Loader2, Trash2 } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
-import { useAuth } from '../../context/AuthContext'
-import { useToast } from '../../context/ToastContext'
-import { useLanguage } from '../../context/LanguageContext'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
+import { useToast } from '@/context/ToastContext'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function ReviewSection({ productId }) {
   const { user } = useAuth()

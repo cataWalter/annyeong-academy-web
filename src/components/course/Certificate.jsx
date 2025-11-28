@@ -1,5 +1,6 @@
+"use client";
 import { forwardRef } from 'react'
-import { useLanguage } from '../../context/LanguageContext'
+import { useLanguage } from '@/context/LanguageContext'
 
 const Certificate = forwardRef(({ studentName, courseTitle, date }, ref) => {
   const { t } = useLanguage()

@@ -1,46 +1,45 @@
+"use client";
 import Section from '../ui/Section'
-import { useLanguage } from '../../context/LanguageContext'
 
 export default function Teachers() {
-  const { t } = useLanguage()
   return (
     <Section className="bg-[#F8F9FC]">
       <div className="text-center mb-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-4">
-          {t('teacher_title')}
-        </h2>
-        <p className="text-gray-600">{t('teacher_subtitle')}</p>
+        <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-4">Who will you learn from?</h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Native teachers who currently live in Korea. They don't teach from a 10-year-old textbook but deliver the living language of today. Their mission is to share their love for their culture with you – without language barriers.
+        </p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-8">
-        <div className="bg-white p-8 rounded-3xl shadow-lg max-w-sm text-center border-t-4 border-brand-purple hover:-translate-y-2 transition duration-300">
-          <div className="w-32 h-32 mx-auto mb-6 rounded-full p-1 bg-gradient-to-r from-brand-blue to-brand-purple">
-            <img 
-              src="https://placehold.co/150x150/6a11cb/ffffff?text=Kim" 
-              alt="Kim Teacher" 
-              className="w-full h-full rounded-full object-cover border-4 border-white"
-            />
+      <div className="flex flex-wrap justify-center gap-12">
+        <div className="bg-white p-0 rounded-3xl shadow-lg max-w-sm text-center overflow-hidden group">
+          <div className="h-64 bg-gray-200 relative overflow-hidden">
+             {/* Placeholder for Tutor 1 Image */}
+             <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-100">
+               <span className="font-bold">Image Placeholder</span>
+             </div>
           </div>
-          <h3 className="text-2xl font-bold text-brand-dark">Kim Seon-saeng-nim</h3>
-          <span className="text-sm font-bold text-brand-purple uppercase tracking-wider block mb-4">{t('teacher_kim_role')}</span>
-          <p className="text-gray-600">
-            {t('teacher_kim_bio')}
-          </p>
+          <div className="p-8">
+            <h3 className="text-2xl font-bold text-brand-dark mb-2">Tutor 1</h3>
+            <p className="text-gray-600 italic">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            </p>
+          </div>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl shadow-lg max-w-sm text-center border-t-4 border-brand-blue hover:-translate-y-2 transition duration-300">
-          <div className="w-32 h-32 mx-auto mb-6 rounded-full p-1 bg-gradient-to-r from-brand-blue to-brand-purple">
-            <img 
-              src="https://placehold.co/150x150/2575fc/ffffff?text=Lee" 
-              alt="Lee Teacher" 
-              className="w-full h-full rounded-full object-cover border-4 border-white"
-            />
+        <div className="bg-white p-0 rounded-3xl shadow-lg max-w-sm text-center overflow-hidden group">
+          <div className="h-64 bg-gray-200 relative overflow-hidden">
+             {/* Placeholder for Tutor 2 Image */}
+             <div className="absolute inset-0 flex items-center justify-center text-gray-400 bg-gray-100">
+               <span className="font-bold">Image Placeholder</span>
+             </div>
           </div>
-          <h3 className="text-2xl font-bold text-brand-dark">Lee Seon-saeng-nim</h3>
-          <span className="text-sm font-bold text-brand-blue uppercase tracking-wider block mb-4">{t('teacher_lee_role')}</span>
-          <p className="text-gray-600">
-            {t('teacher_lee_bio')}
-          </p>
+          <div className="p-8">
+            <h3 className="text-2xl font-bold text-brand-dark mb-2">Tutor 2</h3>
+            <p className="text-gray-600 italic">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            </p>
+          </div>
         </div>
       </div>
     </Section>

@@ -1,7 +1,8 @@
+"use client";
 import { useState, useEffect } from 'react'
 import { Save, StickyNote, Loader2, Cloud, CloudOff } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
-import { useLanguage } from '../../context/LanguageContext'
+import { supabase } from '@/lib/supabase'
+import { useLanguage } from '@/context/LanguageContext'
 
 export default function LessonNotes({ lessonId, userId }) {
   const { t } = useLanguage()

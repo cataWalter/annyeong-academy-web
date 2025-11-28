@@ -1,7 +1,8 @@
+"use client";
 import { AlertCircle } from 'lucide-react'
 
 export default function SupabaseConfigWarning() {
-  const isConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
+  const isConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (isConfigured) return null
 
