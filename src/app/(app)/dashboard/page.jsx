@@ -5,8 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { useGamification } from '@/hooks/useGamification'
 import { useLanguage } from '@/context/LanguageContext'
 import Link from 'next/link'
-import { BookOpen, Loader2, PlayCircle, Calendar, Download, ArrowRight, Award, Zap, Flame, Clock, StickyNote } from 'lucide-react'
+import { BookOpen, Loader2, PlayCircle, Calendar, Download, ArrowRight, Award, Zap, Flame, Clock, StickyNote, ExternalLink } from 'lucide-react'
 import ReferralCard from '@/components/dashboard/ReferralCard'
+import { extractTag } from '@/lib/helpers'
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
@@ -54,7 +55,7 @@ export default function Dashboard() {
              const last = userProgress.find(p => p.course_id === course.id)
              if (last) {
                const lTitle = courseLessons.find(cl => cl.id === last.lesson_id)?.title
-               lastAccessData[course.id] = { title: lTitle, id: last.lesson_id } // Store ID and Title
+               lastAccessData[course.id] = { title: lTitle, id: last.lesson_id }
              }
           })
           setProgressMap(progressData)
@@ -125,9 +126,6 @@ export default function Dashboard() {
                              <span className={`text-xs font-bold ${progress === 100 ? "text-green-600" : "text-gray-400"}`}>
                                 {progress === 100 ? "Completed! 🏆" : `${progress}% Complete`}
                              </span>
-                             {/* Note: We might need to pass query param or state to jump to specific lesson in player, 
-                                 but currently player defaults to first or needs logic. 
-                                 For now, linking to course page is safe, and CoursePlayer handles logic. */}
                              <Link href={`/corsi/${course.id}`} className="bg-brand-dark text-white pl-3 pr-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-brand-purple transition flex items-center gap-2 transform hover:-translate-y-0.5">
                                 <PlayCircle size={16} /> {progress === 0 ? "Start" : "Resume"}
                              </Link>
@@ -170,19 +168,28 @@ export default function Dashboard() {
               <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Calendar size={20} className="text-brand-purple"/> My Calendar</h3>
               {upcomingEvents.length > 0 ? (
                  <div className="space-y-4">
-                    {upcomingEvents.map(evt => (
-                       <div key={evt.id} className="flex gap-3 items-start border-b border-gray-50 pb-3 last:border-0 last:pb-0">
-                          <div className="bg-gray-100 rounded-lg p-2 text-center min-w-[50px]">
-                             <span className="block text-[10px] font-bold text-gray-500 uppercase">{new Date(evt.event_date).toLocaleString('default', {month:'short'})}</span>
-                             <span className="block text-xl font-black text-brand-dark leading-none">{new Date(evt.event_date).getDate()}</span>
-                          </div>
-                          <div>
-                             <p className="text-sm font-bold text-gray-800 line-clamp-1">{evt.title}</p>
-                             <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Clock size={10}/> {new Date(evt.event_date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p>
-                             <a href="#" className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded mt-2 inline-block font-bold">Zoom Link Ready</a>
-                          </div>
-                       </div>
-                    ))}
+                    {upcomingEvents.map(evt => {
+                       const zoomLink = extractTag(evt.description, 'ZOOM')
+                       return (
+                         <div key={evt.id} className="flex gap-3 items-start border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                            <div className="bg-gray-100 rounded-lg p-2 text-center min-w-[50px]">
+                               <span className="block text-[10px] font-bold text-gray-500 uppercase">{new Date(evt.event_date).toLocaleString('default', {month:'short'})}</span>
+                               <span className="block text-xl font-black text-brand-dark leading-none">{new Date(evt.event_date).getDate()}</span>
+                            </div>
+                            <div className="flex-1">
+                               <p className="text-sm font-bold text-gray-800 line-clamp-1">{evt.title}</p>
+                               <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Clock size={10}/> {new Date(evt.event_date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p>
+                               {zoomLink ? (
+                                 <a href={zoomLink} target="_blank" className="text-[10px] bg-green-50 text-green-700 px-2 py-1 rounded mt-2 inline-flex items-center gap-1 font-bold hover:bg-green-100 transition">
+                                   <ExternalLink size={10}/> Join Zoom
+                                 </a>
+                               ) : (
+                                 <span className="text-[10px] bg-gray-50 text-gray-400 px-2 py-1 rounded mt-2 inline-block">Link TBA</span>
+                               )}
+                            </div>
+                         </div>
+                       )
+                    })}
                  </div>
               ) : (
                  <div className="text-center py-6">
@@ -202,7 +209,7 @@ export default function Dashboard() {
                  </div>
                  <p className="text-gray-300 text-sm mb-1 font-medium">Level {level} • Silver League</p>
                  <div className="w-full bg-black/30 rounded-full h-2 mb-4 overflow-hidden border border-white/10">
-                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full" style={{width: '60%'}}></div>
+                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full" style={{width: `${(points % 1000) / 10}%`}}></div>
                  </div>
               </div>
               <div className="absolute -bottom-6 -right-6 text-white/5 rotate-12"><Award size={140}/></div>

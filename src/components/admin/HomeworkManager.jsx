@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Loader2, FileText, CheckCircle, XCircle, Download, Save } from 'lucide-react'
+import { Loader2, FileText, CheckCircle, Download, Save, ExternalLink } from 'lucide-react'
 
 export default function HomeworkManager() {
   const [submissions, setSubmissions] = useState([])
@@ -17,6 +17,22 @@ export default function HomeworkManager() {
       .order('created_at', { ascending: false })
     setSubmissions(data || [])
     setLoading(false)
+  }
+
+  const getDownloadLink = async (path) => {
+    // Attempt signed URL first (for private buckets)
+    const { data, error } = await supabase.storage.from('homework').createSignedUrl(path, 60)
+    if (error || !data) {
+      // Fallback to public URL
+      const { data: publicData } = supabase.storage.from('homework').getPublicUrl(path)
+      return publicData.publicUrl
+    }
+    return data.signedUrl
+  }
+
+  const handleDownload = async (path) => {
+    const url = await getDownloadLink(path)
+    window.open(url, '_blank')
   }
 
   const handleGrade = async (id) => {
@@ -59,9 +75,9 @@ export default function HomeworkManager() {
                  ) : (
                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">Graded: {sub.grade}</span>
                  )}
-                 <a href="#" className="text-brand-blue text-xs font-bold flex items-center gap-1 hover:underline">
+                 <button onClick={() => handleDownload(sub.file_url)} className="text-brand-blue text-xs font-bold flex items-center gap-1 hover:underline cursor-pointer">
                    <Download size={12}/> Download File
-                 </a>
+                 </button>
               </div>
             </div>
 

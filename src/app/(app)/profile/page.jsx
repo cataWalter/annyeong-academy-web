@@ -3,14 +3,15 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { supabase } from '@/lib/supabase'
-import { User, Save, Loader2, Camera, Lock, FileText, Download, Award, MapPin } from 'lucide-react'
+import { User, Save, Loader2, Camera, Lock, FileText, Download, Award, MapPin, Trash2, AlertTriangle } from 'lucide-react'
 import { generateFilePath } from '@/lib/helpers'
 import { generateInvoice } from '@/utils/invoiceGenerator'
 
 export default function Profile() {
-  const { user, refreshProfile } = useAuth()
+  const { user, refreshProfile, signOut } = useAuth()
   const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
+  const [passLoading, setPassLoading] = useState(false)
   
   // Profile State
   const [fullName, setFullName] = useState('')
@@ -77,6 +78,20 @@ export default function Profile() {
     alert('Profile saved successfully!')
   }
 
+  const handlePasswordChange = async (e) => {
+    e.preventDefault()
+    if (newPassword !== confirmPassword) return alert("Passwords do not match")
+    setPassLoading(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setPassLoading(false)
+    if (error) alert("Error: " + error.message)
+    else {
+      alert("Password updated successfully")
+      setNewPassword('')
+      setConfirmPassword('')
+    }
+  }
+
   const handleAvatarUpload = async (event) => {
     setUploading(true)
     const file = event.target.files[0]
@@ -87,13 +102,21 @@ export default function Profile() {
     setUploading(false)
   }
 
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm("Are you sure? This action cannot be undone. Your account will be queued for deletion.")
+    if (confirmed) {
+      await supabase.from('deletion_requests').insert([{ user_id: user.id, reason: 'User requested' }])
+      alert("Account deletion request submitted. You will be logged out.")
+      await signOut()
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto pb-20">
       <h1 className="text-2xl font-bold text-brand-dark mb-2">{t('prof_title')}</h1>
       <p className="text-gray-500 mb-8">{t('prof_desc')}</p>
 
       <div className="grid gap-8">
-        {/* Main Profile Card */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-blue to-brand-purple"></div>
           <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
@@ -120,13 +143,10 @@ export default function Profile() {
               <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-field" />
             </div>
 
-            {/* BILLING SECTION */}
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2"><MapPin size={18}/> Billing Address</h3>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <input placeholder="Address Line" className="input-field bg-white" value={billing.address} onChange={e => setBilling({...billing, address: e.target.value})} />
-                </div>
+                <div className="md:col-span-2"><input placeholder="Address Line" className="input-field bg-white" value={billing.address} onChange={e => setBilling({...billing, address: e.target.value})} /></div>
                 <input placeholder="City" className="input-field bg-white" value={billing.city} onChange={e => setBilling({...billing, city: e.target.value})} />
                 <input placeholder="ZIP Code" className="input-field bg-white" value={billing.zip} onChange={e => setBilling({...billing, zip: e.target.value})} />
                 <input placeholder="Country" className="input-field bg-white md:col-span-2" value={billing.country} onChange={e => setBilling({...billing, country: e.target.value})} />
@@ -139,8 +159,20 @@ export default function Profile() {
           </form>
         </div>
 
+        {/* Change Password */}
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-bold text-brand-dark mb-6 flex items-center gap-2"><Lock size={20}/> Security</h3>
+          <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
+            <input type="password" placeholder="New Password" className="input-field" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+            <input type="password" placeholder="Confirm Password" className="input-field" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+            <button disabled={passLoading} className="btn bg-gray-900 text-white py-2 px-6 rounded-lg text-sm">
+              {passLoading ? 'Updating...' : 'Update Password'}
+            </button>
+          </form>
+        </div>
+
+        {/* Certificates & Orders */}
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Certificates */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 h-fit">
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-yellow-50 p-2 rounded-lg text-yellow-600"><Award size={20} /></div>
@@ -155,12 +187,9 @@ export default function Profile() {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-gray-400 italic text-sm">No certificates yet. Complete a course!</p>
-            )}
+            ) : <p className="text-gray-400 italic text-sm">No certificates yet.</p>}
           </div>
 
-          {/* Order History */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 h-fit">
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-blue-50 p-2 rounded-lg text-brand-blue"><FileText size={20} /></div>
@@ -174,16 +203,23 @@ export default function Profile() {
                       <p className="font-bold text-gray-800 text-sm">{order.products?.title}</p>
                       <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()} • {order.products?.price}</p>
                     </div>
-                    <button onClick={() => generateInvoice(order, {full_name: fullName, billing_address: billing})} className="text-gray-400 hover:text-brand-purple transition" title="Download Invoice">
-                      <Download size={18} />
-                    </button>
+                    <button onClick={() => generateInvoice(order, {full_name: fullName, billing_address: billing})} className="text-gray-400 hover:text-brand-purple transition"><Download size={18} /></button>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-gray-400 italic text-sm">{t('prof_no_orders')}</p>
-            )}
+            ) : <p className="text-gray-400 italic text-sm">{t('prof_no_orders')}</p>}
           </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div className="bg-red-50 p-8 rounded-2xl border border-red-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-red-700 flex items-center gap-2"><AlertTriangle size={20}/> Danger Zone</h3>
+            <p className="text-sm text-red-600">Permanently delete your account and all data.</p>
+          </div>
+          <button onClick={handleDeleteAccount} className="bg-white text-red-600 border border-red-200 px-6 py-2 rounded-lg font-bold text-sm hover:bg-red-50 transition flex items-center gap-2">
+            <Trash2 size={16}/> Delete Account
+          </button>
         </div>
       </div>
       <style>{`

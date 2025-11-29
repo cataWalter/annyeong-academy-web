@@ -4,8 +4,9 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import Navbar from '@/components/sections/Navbar'
 import Footer from '@/components/sections/Footer'
-import { Loader2, CheckCircle, ArrowRight, Brain, AlertCircle } from 'lucide-react'
+import { Loader2, CheckCircle, ArrowRight, Brain, Timer, AlertOctagon, Mic, Square, RefreshCcw } from 'lucide-react'
 import Link from 'next/link'
+import confetti from 'canvas-confetti'
 
 export default function PlacementTest() {
   const { user } = useAuth()
@@ -14,54 +15,95 @@ export default function PlacementTest() {
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState({})
   const [result, setResult] = useState(null)
+  const [alreadyTaken, setAlreadyTaken] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(600)
+  const [isRecording, setIsRecording] = useState(false)
 
   useEffect(() => {
-    const fetchQuestions = async () => {
-      const { data } = await supabase.from('placement_questions').select('*').order('created_at', { ascending: true })
-      
-      if (data && data.length > 0) {
-        setQuestions(data)
-      } else {
-        // Fallback if DB is empty
-        setQuestions([
-          { id: 1, question: "No questions found in DB. Contact Admin.", options: ["OK"], correct_index: 0, level: 'Beginner' }
-        ])
-      }
-      setLoading(false)
-    }
+    if(user) checkHistory()
     fetchQuestions()
-  }, [])
+  }, [user])
 
-  const handleAnswer = (optionIndex) => {
-    setAnswers({ ...answers, [currentQ]: optionIndex })
-  }
-
-  const handleNext = async () => {
-    if (currentQ < questions.length - 1) {
-      setCurrentQ(currentQ + 1)
-    } else {
+  useEffect(() => {
+    if (!loading && !result && !alreadyTaken && timeLeft > 0) {
+      const timer = setInterval(() => setTimeLeft(t => t - 1), 1000)
+      return () => clearInterval(timer)
+    } else if (timeLeft === 0 && !result) {
       calculateResult()
     }
+  }, [loading, result, alreadyTaken, timeLeft])
+
+  const checkHistory = async () => {
+    const { data } = await supabase.from('placement_results').select('score').eq('user_id', user.id).limit(1)
+    if(data && data.length > 0) setAlreadyTaken(true)
+  }
+
+  const fetchQuestions = async () => {
+    const { data } = await supabase.from('placement_questions').select('*').order('created_at', { ascending: true })
+    if (data && data.length > 0) {
+      setQuestions(data)
+    } else {
+      setQuestions([
+        { id: 1, type: 'multiple-choice', question: "Select the correct greeting.", options: ["Annyeong", "Gamsahamnida"], correct_index: 0, level: 'Beginner' }
+      ])
+    }
+    setLoading(false)
+  }
+
+  const handleMCAnswer = (optionIndex) => setAnswers({ ...answers, [currentQ]: { type: 'multiple-choice', value: optionIndex } })
+  const handleTextAnswer = (text) => setAnswers({ ...answers, [currentQ]: { type: 'text', value: text } })
+  const handleVoiceRecord = () => { setIsRecording(!isRecording); if(isRecording) setAnswers({ ...answers, [currentQ]: { type: 'voice', value: 'recorded' } }) }
+
+  const handleNext = async () => {
+    if (currentQ < questions.length - 1) setCurrentQ(currentQ + 1)
+    else calculateResult()
   }
 
   const calculateResult = async () => {
     let score = 0
+    let total = 0
     questions.forEach((q, i) => {
-      if (answers[i] === q.correct_index) score++
+      if (answers[i]?.value === q.correct_index || answers[i]?.type === 'voice') score++
+      total++
     })
-    
-    // Simple logic: > 80% = Advanced, > 50% = Intermediate, else Beginner
-    const percentage = score / questions.length
-    let level = 'Beginner'
-    if (percentage > 0.8) level = 'Advanced'
-    else if (percentage > 0.5) level = 'Intermediate'
+    const percentage = score / (total || 1)
+    let level = percentage > 0.8 ? 'Advanced' : (percentage > 0.5 ? 'Intermediate' : 'Beginner')
 
-    setResult({ score, level, total: questions.length })
-
+    setResult({ score, level, total })
     if (user) {
+      // Upsert: Overwrite previous result for this user to allow "taking latest score"
+      // Note: Table constraints might need handling if PK is id. We just insert new row in this simple logic.
       await supabase.from('placement_results').insert([{ user_id: user.id, score, recommended_level: level }])
     }
+    confetti()
   }
+
+  const retakeTest = async () => {
+    if(!confirm("Retake the test? Your previous score will be superseded.")) return
+    // Logic: Delete old results
+    if (user) await supabase.from('placement_results').delete().eq('user_id', user.id)
+    setAlreadyTaken(false)
+    setResult(null)
+    setCurrentQ(0)
+    setAnswers({})
+    setTimeLeft(600)
+  }
+
+  if(alreadyTaken && !result) return (
+    <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
+      <Navbar /><main className="flex-grow pt-32 pb-20 px-4 flex items-center justify-center">
+        <div className="bg-white p-10 rounded-3xl shadow-lg text-center max-w-md">
+          <AlertOctagon size={48} className="mx-auto text-orange-500 mb-4"/>
+          <h2 className="text-2xl font-bold text-brand-dark mb-2">Test Already Taken</h2>
+          <p className="text-gray-500 mb-6">You have completed your assessment.</p>
+          <div className="flex gap-4 justify-center">
+             <Link href="/corsi" className="btn btn-plum-gradient px-6 py-2">Browse Courses</Link>
+             <button onClick={retakeTest} className="px-6 py-2 border border-gray-200 rounded-full text-gray-600 hover:bg-gray-50 flex items-center gap-2 font-bold"><RefreshCcw size={16}/> Retake</button>
+          </div>
+        </div>
+      </main><Footer />
+    </div>
+  )
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
@@ -70,68 +112,30 @@ export default function PlacementTest() {
         <div className="max-w-2xl mx-auto">
           {!result ? (
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 min-h-[400px] flex flex-col">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="bg-brand-purple/10 p-2 rounded-xl text-brand-purple"><Brain size={24}/></div>
-                <h1 className="text-2xl font-bold text-brand-dark">Placement Test</h1>
-              </div>
-
-              {loading ? (
-                <div className="flex-1 flex items-center justify-center"><Loader2 className="animate-spin text-brand-purple" size={40} /></div>
-              ) : (
+              {loading ? <Loader2 className="animate-spin m-auto"/> : (
                 <>
-                  <div className="mb-6">
-                    <div className="flex justify-between text-xs font-bold text-gray-400 mb-2 uppercase">
-                      <span>Question {currentQ + 1} of {questions.length}</span>
-                      <span>{Math.round(((currentQ + 1) / questions.length) * 100)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
-                      <div className="bg-brand-purple h-2 rounded-full transition-all duration-300" style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}></div>
-                    </div>
+                  <div className="flex justify-between items-center mb-6">
+                    <span className="font-bold text-brand-purple">Q {currentQ + 1}/{questions.length}</span>
+                    <span className="bg-gray-100 px-3 py-1 rounded-full font-mono text-sm">{Math.floor(timeLeft/60)}:{(timeLeft%60).toString().padStart(2,'0')}</span>
                   </div>
-
-                  <h3 className="text-xl font-bold text-gray-800 mb-6">{questions[currentQ].question}</h3>
-
-                  <div className="space-y-3 mb-8 flex-1">
-                    {questions[currentQ].options && questions[currentQ].options.map((opt, idx) => (
-                      <button 
-                        key={idx}
-                        onClick={() => handleAnswer(idx)}
-                        className={`w-full p-4 text-left rounded-xl border-2 transition font-medium ${answers[currentQ] === idx ? 'border-brand-purple bg-purple-50 text-brand-purple' : 'border-gray-100 hover:border-gray-300 text-gray-600'}`}
-                      >
-                        {opt}
-                      </button>
+                  <h3 className="text-xl font-bold mb-6">{questions[currentQ]?.question}</h3>
+                  <div className="flex-1 space-y-3">
+                    {questions[currentQ]?.options?.map((opt, i) => (
+                      <button key={i} onClick={() => handleMCAnswer(i)} className={`w-full p-4 rounded-xl border-2 text-left font-medium ${answers[currentQ]?.value === i ? 'border-brand-purple bg-purple-50 text-brand-purple' : 'border-gray-100'}`}>{opt}</button>
                     ))}
+                    {questions[currentQ]?.type === 'text' && <textarea className="w-full border p-4 rounded-xl" onChange={e => handleTextAnswer(e.target.value)} />}
+                    {questions[currentQ]?.type === 'voice' && <button onClick={handleVoiceRecord} className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-brand-purple'} text-white`}><Mic/></button>}
                   </div>
-
-                  <div className="flex justify-end pt-4 border-t border-gray-50">
-                    <button 
-                      onClick={handleNext} 
-                      disabled={answers[currentQ] === undefined}
-                      className="bg-brand-dark text-white px-8 py-3 rounded-xl font-bold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {currentQ === questions.length - 1 ? 'Finish' : 'Next'} <ArrowRight size={18}/>
-                    </button>
-                  </div>
+                  <div className="mt-6 text-right"><button onClick={handleNext} disabled={!answers[currentQ]} className="btn btn-plum-gradient px-8 py-2 disabled:opacity-50">Next</button></div>
                 </>
               )}
             </div>
           ) : (
-            <div className="bg-white p-10 rounded-3xl shadow-lg border-t-4 border-green-500 text-center animate-fade-in">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-green-600" />
-              </div>
-              <h2 className="text-3xl font-bold text-brand-dark mb-2">Test Completed!</h2>
-              <p className="text-gray-500 mb-6">You scored {result.score} out of {result.total}</p>
-              
-              <div className="bg-gray-50 p-6 rounded-2xl mb-8 border border-gray-100">
-                <p className="text-sm font-bold text-gray-400 uppercase mb-1">Recommended Level</p>
-                <p className="text-3xl font-black text-brand-purple">{result.level}</p>
-                <p className="text-sm text-gray-500 mt-2">Based on your score, we recommend starting with {result.level} courses.</p>
-              </div>
-
-              <Link href={`/corsi?level=${result.level}`} className="btn btn-plum-gradient inline-flex items-center gap-2 px-8 py-3 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition">
-                Browse {result.level} Courses <ArrowRight size={18}/>
-              </Link>
+            <div className="bg-white p-10 rounded-3xl shadow-lg text-center animate-fade-in">
+              <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4"/>
+              <h2 className="text-3xl font-bold mb-2">Result: {result.level}</h2>
+              <p className="text-gray-500 mb-6">Score: {result.score}/{result.total}</p>
+              <Link href={`/corsi?level=${result.level}`} className="btn btn-plum-gradient px-8 py-3">View Recommended Courses</Link>
             </div>
           )}
         </div>

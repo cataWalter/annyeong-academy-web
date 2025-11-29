@@ -1,0 +1,8 @@
+User-Agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /profile/
+Disallow: /cart/
+
+Sitemap: https://annyeong-academy.com/sitemap.xml

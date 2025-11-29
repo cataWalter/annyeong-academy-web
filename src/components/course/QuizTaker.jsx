@@ -1,6 +1,6 @@
 "use client";
-import { useState } from 'react'
-import { CheckCircle, XCircle, RefreshCw, Trophy, Mic, Type, ArrowRight, Save, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { CheckCircle, XCircle, RefreshCw, Trophy, Mic, Type, ArrowRight, Save, Loader2, AlertTriangle } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { useLanguage } from '@/context/LanguageContext'
 import { supabase } from '@/lib/supabase'
@@ -13,6 +13,8 @@ export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) 
   const [score, setScore] = useState(0)
   const [showScore, setShowScore] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [attempts, setAttempts] = useState(0)
+  const [maxAttempts] = useState(3) // Configurable limit
   
   const [selectedOption, setSelectedOption] = useState(null)
   const [textAnswer, setTextAnswer] = useState('')
@@ -20,7 +22,29 @@ export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) 
   const [isAnswered, setIsAnswered] = useState(false)
   const [feedback, setFeedback] = useState(null)
 
+  useEffect(() => {
+    if (user && lessonId) checkAttempts()
+  }, [user, lessonId])
+
+  const checkAttempts = async () => {
+    const { count } = await supabase.from('quiz_results')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('lesson_id', lessonId)
+    setAttempts(count || 0)
+  }
+
   if (!quizData || quizData.length === 0) return null
+
+  if (attempts >= maxAttempts && !showScore) {
+    return (
+      <div className="bg-red-50 p-8 rounded-2xl text-center border border-red-100">
+        <AlertTriangle className="mx-auto text-red-500 mb-4" size={40}/>
+        <h3 className="text-xl font-bold text-red-800">Max Attempts Reached</h3>
+        <p className="text-red-600 mt-2">You have taken this quiz {attempts} times. Please contact your tutor or wait 24 hours to retake.</p>
+      </div>
+    )
+  }
 
   const question = quizData[currentQuestion]
   const questionType = question.type || 'multiple-choice' 
@@ -56,7 +80,7 @@ export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) 
       setTimeout(() => {
         setIsRecording(false)
         setIsAnswered(true)
-        setScore(score + 1)
+        setScore(score + 1) // Mock passing for voice
         setFeedback('correct')
         confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } })
       }, 2000)
@@ -90,6 +114,7 @@ export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) 
           total_questions: quizData.length,
           passed: passed
         }])
+        await checkAttempts() // Update count
       } catch (err) {
         console.error("Failed to save quiz result", err)
       } finally {
@@ -101,6 +126,7 @@ export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) 
   }
 
   const restart = () => {
+    if (attempts >= maxAttempts) return
     setCurrentQuestion(0)
     setScore(0)
     setShowScore(false)
@@ -118,13 +144,16 @@ export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) 
           <Trophy size={40} className={passed ? "text-yellow-500" : "text-gray-400"} />
         </div>
         <h3 className="text-2xl font-bold text-brand-dark mb-2">{t('quiz_completed')}</h3>
-        <p className="text-gray-500 mb-6">{t('quiz_scored')} {score} / {quizData.length}</p>
+        <p className="text-gray-500 mb-2">{t('quiz_scored')} {score} / {quizData.length}</p>
+        <p className="text-xs text-gray-400 mb-6">Attempts: {attempts} / {maxAttempts}</p>
         
         {saving && <p className="text-xs text-brand-purple flex items-center justify-center gap-1 mb-4"><Loader2 className="animate-spin" size={12}/> Saving Result...</p>}
 
-        <button onClick={restart} className="bg-brand-purple text-white px-6 py-2 rounded-xl font-bold hover:opacity-90 transition flex items-center gap-2 mx-auto">
-          <RefreshCw size={18} /> {t('quiz_retry')}
-        </button>
+        {!passed && attempts < maxAttempts && (
+          <button onClick={restart} className="bg-brand-purple text-white px-6 py-2 rounded-xl font-bold hover:opacity-90 transition flex items-center gap-2 mx-auto">
+            <RefreshCw size={18} /> {t('quiz_retry')}
+          </button>
+        )}
       </div>
     )
   }

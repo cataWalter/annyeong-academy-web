@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Loader2, CheckCircle, Lock } from 'lucide-react'
+import { triggerEmail } from '@/lib/emailService'
 
 export default function WebinarForm() {
   const [loading, setLoading] = useState(false)
@@ -17,14 +18,30 @@ export default function WebinarForm() {
     if (!formData.gdpr_consent) return alert("You must read the Privacy Policy")
     
     setLoading(true)
+    
+    // 1. Save Lead
     const { error } = await supabase.from('webinar_leads').insert([formData])
-    setLoading(false)
 
     if (error) {
       alert("Registration error: " + error.message)
-    } else {
-      setSuccess(true)
+      setLoading(false)
+      return
     }
+
+    // 2. Trigger Welcome Email
+    await triggerEmail({
+      to: formData.email,
+      subject: "Your Korean Trial Class Link! 🇰🇷",
+      html: `
+        <h1>Annyeong, ${formData.full_name}!</h1>
+        <p>You are confirmed for the live class.</p>
+        <p><strong>Zoom Link:</strong> <a href="https://zoom.us/j/123456789">Click Here to Join</a></p>
+        <p>See you there!</p>
+      `
+    })
+
+    setLoading(false)
+    setSuccess(true)
   }
 
   if (success) {
@@ -34,7 +51,7 @@ export default function WebinarForm() {
           <CheckCircle className="w-10 h-10 text-green-600" />
         </div>
         <h3 className="text-2xl font-bold text-brand-dark mb-2">You're in! 🎉</h3>
-        <p className="text-gray-600">We'll send the Zoom link to your email shortly.</p>
+        <p className="text-gray-600">We've sent the Zoom link to <strong>{formData.email}</strong>.</p>
       </div>
     )
   }

@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Loader2, Trash2, Edit, Plus, Image } from 'lucide-react'
+import { Loader2, Trash2, Edit } from 'lucide-react'
 import MarkdownToolbar from '@/components/ui/MarkdownToolbar'
+import FileUploader from './FileUploader'
 
 export default function BlogManager() {
   const [posts, setPosts] = useState([])
@@ -61,7 +62,14 @@ export default function BlogManager() {
         <h3 className="font-bold text-lg mb-4">{editing ? 'Edit Post' : 'New Blog Post'}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input required placeholder="Title" className="input-field" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
-          <input placeholder="Image URL" className="input-field" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
+          
+          <FileUploader 
+            bucket="course-materials" // Using generic bucket
+            label="Cover Image" 
+            value={formData.image_url} 
+            onUpload={(url) => setFormData({...formData, image_url: url})} 
+          />
+
           <input placeholder="Tags (comma separated)" className="input-field" value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} />
           <textarea placeholder="Short Excerpt" className="input-field h-20" value={formData.excerpt} onChange={e => setFormData({...formData, excerpt: e.target.value})} />
           

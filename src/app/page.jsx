@@ -1,4 +1,5 @@
 "use client";
+import UpcomingEvents from '@/components/sections/UpcomingEvents'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Navbar from '@/components/sections/Navbar'
@@ -81,6 +82,7 @@ export default function LandingPage() {
 
         <Countdown />
         <FeaturedCourses /> {/* Dynamic Component */}
+        <UpcomingEvents />
         <PainPoints />
         <Method />
         <Testimonials />

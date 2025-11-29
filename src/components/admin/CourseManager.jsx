@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Loader2, Trash2, Edit, Video, HelpCircle, Plus, Calendar, Folder } from 'lucide-react'
 import SnippetHelper from './SnippetHelper'
+import FileUploader from './FileUploader'
 
 export default function CourseManager() {
   const [courses, setCourses] = useState([])
@@ -12,7 +13,7 @@ export default function CourseManager() {
   const [editing, setEditing] = useState(null)
   
   const [formData, setFormData] = useState({ 
-    title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: '', module: 'General'
+    title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: '', module: 'General', pdf_url: ''
   })
 
   useEffect(() => { fetchData() }, [])
@@ -45,7 +46,8 @@ export default function CourseManager() {
       course_id: selectedCourse, 
       title: formData.title, 
       type: formData.type,
-      video_url: formData.video_url, 
+      video_url: formData.video_url,
+      pdf_url: formData.pdf_url,
       description: formData.description, 
       quiz_data: parsedQuiz,
       release_date: formData.release_date || new Date().toISOString(),
@@ -56,15 +58,19 @@ export default function CourseManager() {
     else await supabase.from('lessons').insert([payload])
 
     setEditing(null)
-    setFormData({ title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: '', module: 'General' })
+    setFormData({ title: '', video_url: '', pdf_url: '', description: '', quiz_data: '', type: 'video', release_date: '', module: 'General' })
     fetchData()
   }
 
   const handleEdit = (lesson) => {
     setEditing(lesson)
     setFormData({
-      title: lesson.title, video_url: lesson.video_url || '', description: lesson.description || '',
-      type: lesson.type || 'video', quiz_data: lesson.quiz_data ? JSON.stringify(lesson.quiz_data, null, 2) : '',
+      title: lesson.title, 
+      video_url: lesson.video_url || '', 
+      pdf_url: lesson.pdf_url || '',
+      description: lesson.description || '',
+      type: lesson.type || 'video', 
+      quiz_data: lesson.quiz_data ? JSON.stringify(lesson.quiz_data, null, 2) : '',
       release_date: lesson.release_date ? new Date(lesson.release_date).toISOString().slice(0,16) : '',
       module: lesson.module || 'General'
     })
@@ -77,6 +83,7 @@ export default function CourseManager() {
   }
 
   const insertSnippet = (text) => setFormData(prev => ({ ...prev, description: prev.description + text }))
+  const insertQuizTemplate = (json) => setFormData(prev => ({ ...prev, quiz_data: json }))
 
   const groupedLessons = lessons.reduce((acc, lesson) => {
     const mod = lesson.module || 'General'
@@ -107,18 +114,33 @@ export default function CourseManager() {
             <select className="input-field" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}><option value="video">Video</option><option value="audio">Audio</option></select>
             <input type="datetime-local" className="input-field" value={formData.release_date} onChange={e => setFormData({...formData, release_date: e.target.value})} />
           </div>
-          <input placeholder="Video/Audio URL" className="input-field" value={formData.video_url} onChange={e => setFormData({...formData, video_url: e.target.value})} />
+          
+          <FileUploader 
+            bucket="course-materials" 
+            label="Lesson Media (Video/Audio)" 
+            accept="video/*,audio/*"
+            value={formData.video_url} 
+            onUpload={(url) => setFormData({...formData, video_url: url})} 
+          />
+
+          <FileUploader 
+            bucket="course-materials" 
+            label="PDF Handout (Optional)" 
+            accept="application/pdf"
+            value={formData.pdf_url} 
+            onUpload={(url) => setFormData({...formData, pdf_url: url})} 
+          />
           
           <div>
-             <SnippetHelper onInsert={insertSnippet} />
+             <SnippetHelper onInsert={insertSnippet} onInsertQuiz={insertQuizTemplate} />
              <textarea placeholder="Description / Vocabulary" className="input-field h-24" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
           </div>
           
-          <textarea placeholder='Quiz JSON: [{"question":"...","options":["A","B"],"correct":0}]' className="input-field h-24 font-mono text-xs" value={formData.quiz_data} onChange={e => setFormData({...formData, quiz_data: e.target.value})} />
+          <textarea placeholder='Quiz JSON' className="input-field h-24 font-mono text-xs" value={formData.quiz_data} onChange={e => setFormData({...formData, quiz_data: e.target.value})} />
 
           <div className="flex gap-2">
             <button type="submit" disabled={loading} className="btn btn-plum-gradient w-full py-2">{loading ? 'Saving...' : 'Save Lesson'}</button>
-            {editing && <button type="button" onClick={() => {setEditing(null); setFormData({ title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: '', module: 'General' })}} className="px-4 py-2 bg-gray-100 rounded-lg text-gray-600">Cancel</button>}
+            {editing && <button type="button" onClick={() => {setEditing(null); setFormData({ title: '', video_url: '', pdf_url: '', description: '', quiz_data: '', type: 'video', release_date: '', module: 'General' })}} className="px-4 py-2 bg-gray-100 rounded-lg text-gray-600">Cancel</button>}
           </div>
         </form>
       </div>
@@ -135,7 +157,7 @@ export default function CourseManager() {
                     <h5 className="font-bold text-gray-700 text-sm">{l.title}</h5>
                     <div className="flex gap-2 mt-1 text-[10px]">
                       {l.quiz_data && <span className="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded flex items-center gap-1"><HelpCircle size={8}/> Quiz</span>}
-                      {l.release_date && new Date(l.release_date) > new Date() && <span className="bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded flex items-center gap-1"><Calendar size={8}/> Scheduled</span>}
+                      {l.pdf_url && <span className="bg-green-100 text-green-600 px-1.5 py-0.5 rounded flex items-center gap-1">PDF</span>}
                     </div>
                   </div>
                   <div className="flex gap-1">

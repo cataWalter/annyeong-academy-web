@@ -1,12 +1,10 @@
 "use client";
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { 
-  LayoutList, Loader2, Users, GraduationCap, DollarSign, Database,
-  Megaphone, Mail, PenTool, Brain, Calendar, ShoppingBag, LayoutTemplate, BarChart2, UserCheck, HelpCircle, MessageSquare, Gift, Settings, FileText
+  LayoutList, Loader2, Users, GraduationCap, DollarSign, Database, Tag,
+  Megaphone, PenTool, Brain, Calendar, ShoppingBag, LayoutTemplate, BarChart2, UserCheck, HelpCircle, MessageSquare, Gift, Settings, FileText
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 
 import CourseManager from '@/components/admin/CourseManager'
 import EventManager from '@/components/admin/EventManager'
@@ -26,41 +24,44 @@ import SettingsManager from '@/components/admin/SettingsManager'
 import OrderManager from '@/components/admin/OrderManager'
 import HomeworkManager from '@/components/admin/HomeworkManager'
 import FeedbackViewer from '@/components/admin/FeedbackViewer'
-import SeedManager from '@/components/admin/SeedManager' // NEW
+import SeedManager from '@/components/admin/SeedManager'
+import CouponManager from '@/components/admin/CouponManager' // NEW
 
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth()
-  const router = useRouter()
   const [activeTab, setActiveTab] = useState('analytics')
   
   if (authLoading || !isAdmin) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-brand-purple"/></div>
+
+  const tabs = [
+    { id: 'analytics', icon: BarChart2, label: 'Overview' },
+    { id: 'orders', icon: DollarSign, label: 'Sales' },
+    { id: 'coupons', icon: Tag, label: 'Coupons' }, // NEW
+    { id: 'grading', icon: FileText, label: 'Homework' },
+    { id: 'lessons', icon: LayoutList, label: 'Courses' },
+    { id: 'db', icon: Database, label: 'DB Tools' },
+    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'students', icon: GraduationCap, label: 'Students' },
+    { id: 'events', icon: Calendar, label: 'Events' },
+    { id: 'tutors', icon: UserCheck, label: 'Tutors' },
+    { id: 'blog', icon: PenTool, label: 'Blog' },
+    { id: 'shop', icon: ShoppingBag, label: 'Shop' },
+    { id: 'reviews', icon: MessageSquare, label: 'Reviews' },
+    { id: 'feedback', icon: MessageSquare, label: 'Feedback' },
+    { id: 'giveaway', icon: Gift, label: 'Giveaway' },
+    { id: 'tests', icon: Brain, label: 'Tests' },
+    { id: 'cms', icon: LayoutTemplate, label: 'CMS' },
+    { id: 'faq', icon: HelpCircle, label: 'FAQ' },
+    { id: 'leads', icon: Users, label: 'CRM' },
+    { id: 'announce', icon: Megaphone, label: 'Alerts' },
+  ]
 
   return (
     <div className="max-w-7xl mx-auto pb-20">
       <h1 className="text-2xl font-bold text-brand-dark mb-6">Admin Dashboard</h1>
 
-      <div className="flex gap-2 mb-8 border-b border-gray-200 overflow-x-auto pb-1">
-        {[
-          { id: 'analytics', icon: BarChart2, label: 'Overview' },
-          { id: 'orders', icon: DollarSign, label: 'Sales' },
-          { id: 'grading', icon: FileText, label: 'Homework' },
-          { id: 'lessons', icon: LayoutList, label: 'Courses' },
-          { id: 'db', icon: Database, label: 'DB Tools' }, // NEW
-          { id: 'settings', icon: Settings, label: 'Settings' },
-          { id: 'students', icon: GraduationCap, label: 'Students' },
-          { id: 'events', icon: Calendar, label: 'Events' },
-          { id: 'tutors', icon: UserCheck, label: 'Tutors' },
-          { id: 'blog', icon: PenTool, label: 'Blog' },
-          { id: 'shop', icon: ShoppingBag, label: 'Shop' },
-          { id: 'reviews', icon: MessageSquare, label: 'Reviews' },
-          { id: 'feedback', icon: MessageSquare, label: 'Feedback' },
-          { id: 'giveaway', icon: Gift, label: 'Giveaway' },
-          { id: 'tests', icon: Brain, label: 'Tests' },
-          { id: 'cms', icon: LayoutTemplate, label: 'CMS' },
-          { id: 'faq', icon: HelpCircle, label: 'FAQ' },
-          { id: 'leads', icon: Users, label: 'CRM' },
-          { id: 'announce', icon: Megaphone, label: 'Alerts' },
-        ].map(tab => (
+      <div className="flex gap-2 mb-8 border-b border-gray-200 overflow-x-auto pb-1 scrollbar-hide">
+        {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 font-bold rounded-t-lg transition whitespace-nowrap ${activeTab === tab.id ? 'bg-brand-purple text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
             <tab.icon size={18}/> {tab.label}
           </button>
@@ -70,6 +71,7 @@ export default function AdminDashboard() {
       <div className="animate-fade-in">
         {activeTab === 'analytics' && <AnalyticsManager />}
         {activeTab === 'orders' && <OrderManager />}
+        {activeTab === 'coupons' && <CouponManager />}
         {activeTab === 'grading' && <HomeworkManager />}
         {activeTab === 'db' && <SeedManager />}
         {activeTab === 'feedback' && <FeedbackViewer />}

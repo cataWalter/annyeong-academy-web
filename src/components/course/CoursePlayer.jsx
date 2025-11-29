@@ -23,6 +23,7 @@ import jsPDF from 'jspdf'
 export default function CoursePlayer({ course, lessons, user }) {
   const [activeLessonIndex, setActiveLessonIndex] = useState(0)
   const [completedLessonIds, setCompletedLessonIds] = useState([])
+  const [passedQuizLessonIds, setPassedQuizLessonIds] = useState([]) // New State for strict locking
   const [viewMode, setViewMode] = useState('content')
   const [showReport, setShowReport] = useState(false)
   const [showFlashcards, setShowFlashcards] = useState(false)
@@ -48,13 +49,17 @@ export default function CoursePlayer({ course, lessons, user }) {
       // 1. Fetch Progress
       const { data: progress } = await supabase.from('lesson_progress').select('lesson_id, last_accessed').eq('user_id', user.id).eq('course_id', course.id)
       
+      // 2. Fetch Quiz Results (for strict locking)
+      const { data: quizResults } = await supabase.from('quiz_results').select('lesson_id, passed').eq('user_id', user.id).eq('course_id', course.id).eq('passed', true)
+      
+      if(quizResults) setPassedQuizLessonIds(quizResults.map(q => q.lesson_id))
+
       if(progress) {
         const completed = progress.map(p => p.lesson_id)
         setCompletedLessonIds(completed)
         
-        // 2. Find most recently accessed lesson
+        // Find most recently accessed
         const lastAccessedEntry = progress.sort((a,b) => new Date(b.last_accessed) - new Date(a.last_accessed))[0]
-        
         if (lastAccessedEntry) {
             const index = lessons.findIndex(l => l.id === lastAccessedEntry.lesson_id)
             if (index !== -1) {
@@ -63,7 +68,6 @@ export default function CoursePlayer({ course, lessons, user }) {
                 setOpenModules(prev => ({ ...prev, [mod]: true }))
             }
         } else {
-            // Open first module by default
             const firstMod = lessons[0]?.module || 'General'
             setOpenModules({ [firstMod]: true })
         }
@@ -111,11 +115,23 @@ export default function CoursePlayer({ course, lessons, user }) {
   const isDateLocked = activeLesson?.release_date && new Date(activeLesson.release_date) > new Date()
   const isLocked = isPrereqLocked || isDateLocked
 
+  // STRICT COMPLETION LOGIC
+  const hasQuiz = activeLesson?.quiz_data && activeLesson.quiz_data.length > 0
+  const isQuizPassed = passedQuizLessonIds.includes(activeLesson?.id)
+  const canMarkComplete = !hasQuiz || isQuizPassed
+
   const toggleCompletion = async () => {
     if (!activeLesson) return
     const lessonId = activeLesson.id
-    const isComplete = completedLessonIds.includes(lessonId)
     
+    // Block if quiz exists and not passed
+    if (!canMarkComplete && !isLessonCompleted) {
+      alert("You must pass the quiz before completing this lesson.")
+      setViewMode('quiz')
+      return
+    }
+
+    const isComplete = completedLessonIds.includes(lessonId)
     if (isComplete) {
       await supabase.from('lesson_progress').delete().eq('user_id', user.id).eq('lesson_id', lessonId)
       setCompletedLessonIds(prev => prev.filter(id => id !== lessonId))
@@ -125,6 +141,14 @@ export default function CoursePlayer({ course, lessons, user }) {
       addXP(50)
       if (completedLessonIds.length + 1 === lessons.length) confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } })
     }
+  }
+
+  const handleQuizPass = (score) => {
+    if(!passedQuizLessonIds.includes(activeLesson.id)) {
+      setPassedQuizLessonIds(prev => [...prev, activeLesson.id])
+    }
+    // Auto complete lesson on quiz pass
+    if(!isLessonCompleted) toggleCompletion()
   }
 
   const downloadCertificate = async () => {
@@ -140,9 +164,7 @@ export default function CoursePlayer({ course, lessons, user }) {
     finally { setGeneratingPdf(false) }
   }
 
-  const toggleModule = (modName) => {
-    setOpenModules(prev => ({ ...prev, [modName]: !prev[modName] }))
-  }
+  const toggleModule = (modName) => setOpenModules(prev => ({ ...prev, [modName]: !prev[modName] }))
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 min-h-screen relative">
@@ -176,7 +198,7 @@ export default function CoursePlayer({ course, lessons, user }) {
               {gamePairs.length >= 2 && <button onClick={() => setViewMode('game')} className={`px-4 py-2 rounded-lg font-bold text-sm transition flex items-center gap-2 ${viewMode === 'game' ? 'bg-brand-purple text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><Gamepad2 size={14}/> Game</button>}
             </div>
 
-            {viewMode === 'quiz' && <QuizTaker quizData={activeLesson.quiz_data} onComplete={() => { if(!isLessonCompleted) toggleCompletion() }} lessonId={activeLesson.id} courseId={course.id} />}
+            {viewMode === 'quiz' && <QuizTaker quizData={activeLesson.quiz_data} onComplete={handleQuizPass} lessonId={activeLesson.id} courseId={course.id} />}
             {viewMode === 'game' && <MatchingGame pairs={gamePairs} onComplete={() => addXP(20)} />}
 
             {viewMode === 'content' && (
@@ -191,20 +213,23 @@ export default function CoursePlayer({ course, lessons, user }) {
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm mb-8">
                   <div className="flex justify-between items-start mb-4">
                     <h1 className="text-2xl font-bold text-brand-dark">{activeLesson?.title}</h1>
-                    <button onClick={toggleCompletion} className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition ${isLessonCompleted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                       {isLessonCompleted ? <CheckCircle size={18}/> : <Circle size={18}/>} {isLessonCompleted ? "Completed" : "Mark Complete"}
+                    <button 
+                      onClick={toggleCompletion} 
+                      disabled={!canMarkComplete && !isLessonCompleted}
+                      className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition ${isLessonCompleted ? 'bg-green-100 text-green-700' : (!canMarkComplete ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}`}
+                      title={!canMarkComplete ? "Pass Quiz First" : ""}
+                    >
+                       {isLessonCompleted ? <CheckCircle size={18}/> : (canMarkComplete ? <Circle size={18}/> : <Lock size={18}/>)} 
+                       {isLessonCompleted ? "Completed" : (canMarkComplete ? "Mark Complete" : "Pass Quiz First")}
                     </button>
                   </div>
                   <VocabularyDrill description={activeLesson?.description} />
                   <HomeworkUploader lessonId={activeLesson?.id} />
                   
                   <div className="flex gap-3 my-6">
-                     {vocabTerms.length > 0 && (
-                       <button onClick={() => setShowFlashcards(true)} className="flex gap-2 items-center text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded hover:bg-blue-100">
-                         <Layers size={14}/> Flashcards
-                       </button>
-                     )}
+                     {vocabTerms.length > 0 && <button onClick={() => setShowFlashcards(true)} className="flex gap-2 items-center text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded hover:bg-blue-100"><Layers size={14}/> Flashcards</button>}
                      {activeLesson?.pdf_url && <a href={activeLesson.pdf_url} target="_blank" className="flex gap-2 items-center text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded hover:bg-purple-100"><FileDown size={14}/> PDF</a>}
+                     {activeLesson?.quizlet_url && <a href={activeLesson.quizlet_url} target="_blank" className="flex gap-2 items-center text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded hover:bg-blue-100"><ExternalLink size={14}/> Quizlet</a>}
                   </div>
                   <div className="prose prose-sm text-gray-600 whitespace-pre-wrap">{cleanDescription(activeLesson?.description)}</div>
                   

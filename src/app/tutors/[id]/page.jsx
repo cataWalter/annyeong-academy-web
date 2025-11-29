@@ -4,13 +4,14 @@ import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Navbar from '@/components/sections/Navbar'
 import Footer from '@/components/sections/Footer'
-import { PlayCircle, Star, MessageCircle, Share2, Loader2, ArrowLeft, Instagram, Youtube, Music2, X, Send } from 'lucide-react'
+import { PlayCircle, Star, MessageCircle, Share2, Loader2, ArrowLeft, Instagram, Youtube, Music2, X, Send, BookOpen, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { getEmbedUrl } from '@/lib/video'
 
 export default function TutorProfile() {
   const { id } = useParams()
   const [tutor, setTutor] = useState(null)
+  const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [message, setMessage] = useState('')
@@ -20,6 +21,12 @@ export default function TutorProfile() {
     const fetchTutor = async () => {
       const { data } = await supabase.from('tutors').select('*').eq('id', id).single()
       setTutor(data)
+      
+      // Fetch Courses by this Tutor
+      if (data) {
+        const { data: tutorCourses } = await supabase.from('products').select('*').eq('tutor_id', data.id).eq('type', 'course')
+        setCourses(tutorCourses || [])
+      }
       setLoading(false)
     }
     if(id) fetchTutor()
@@ -27,7 +34,6 @@ export default function TutorProfile() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault()
-    // In real app, save to 'messages' table linked to tutor_id
     await supabase.from('contact_messages').insert([{ name: 'Student', email: 'student@internal.com', message: `To ${tutor.name}: ${message}` }])
     setMsgSent(true)
     setTimeout(() => { setModalOpen(false); setMsgSent(false); setMessage('') }, 2000)
@@ -52,15 +58,12 @@ export default function TutorProfile() {
                   <h1 className="text-3xl font-bold text-brand-dark">{tutor.name}</h1>
                   <p className="text-brand-purple font-bold">{tutor.role}</p>
                   
-                  {/* Social Links */}
                   <div className="flex gap-3 mt-3">
                     {tutor.social_links?.instagram && <a href={tutor.social_links.instagram} target="_blank" className="text-pink-600 bg-pink-50 p-2 rounded-full hover:bg-pink-100 transition"><Instagram size={18}/></a>}
-                    {tutor.social_links?.tiktok && <a href={tutor.social_links.tiktok} target="_blank" className="text-black bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition"><Music2 size={18}/></a>}
                     {tutor.social_links?.youtube && <a href={tutor.social_links.youtube} target="_blank" className="text-red-600 bg-red-50 p-2 rounded-full hover:bg-red-100 transition"><Youtube size={18}/></a>}
                   </div>
                 </div>
                 <div className="flex gap-3 mb-2">
-                  <button className="bg-gray-100 p-3 rounded-xl hover:bg-gray-200 transition text-gray-600"><Share2 size={20}/></button>
                   <button onClick={() => setModalOpen(true)} className="bg-brand-dark text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition flex items-center gap-2"><MessageCircle size={18}/> Message</button>
                 </div>
               </div>
@@ -72,22 +75,29 @@ export default function TutorProfile() {
                     <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{tutor.bio}</p>
                   </div>
                   
-                  {tutor.specialties && (
+                  {tutor.video_intro && (
                     <div>
-                      <h3 className="text-xl font-bold text-brand-dark mb-3">Specialties</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {tutor.specialties.map(tag => (
-                          <span key={tag} className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm font-bold">#{tag}</span>
-                        ))}
+                      <h3 className="text-xl font-bold text-brand-dark mb-3">Introduction</h3>
+                      <div className="aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
+                        <iframe src={getEmbedUrl(tutor.video_intro)} className="w-full h-full" allowFullScreen></iframe>
                       </div>
                     </div>
                   )}
 
-                  {tutor.video_intro && (
+                  {courses.length > 0 && (
                     <div>
-                      <h3 className="text-xl font-bold text-brand-dark mb-3">Introduction Video</h3>
-                      <div className="aspect-video rounded-2xl overflow-hidden bg-black">
-                        <iframe src={getEmbedUrl(tutor.video_intro)} className="w-full h-full" allowFullScreen></iframe>
+                      <h3 className="text-xl font-bold text-brand-dark mb-4">My Courses</h3>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        {courses.map(course => (
+                          <Link href={`/corsi/${course.id}`} key={course.id} className="group bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-brand-purple transition">
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="bg-white text-xs font-bold px-2 py-1 rounded border border-gray-100 shadow-sm">{course.level || 'General'}</span>
+                              <ArrowRight size={16} className="text-gray-400 group-hover:text-brand-purple transition"/>
+                            </div>
+                            <h4 className="font-bold text-gray-800 group-hover:text-brand-purple transition">{course.title}</h4>
+                            <p className="text-sm text-gray-500 mt-1">{course.price}</p>
+                          </Link>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -95,19 +105,10 @@ export default function TutorProfile() {
 
                 <div>
                   <h3 className="text-xl font-bold text-brand-dark mb-4">Quick Stats</h3>
-                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-gray-500">Experience</span>
-                      <span className="font-bold text-gray-800">5+ Years</span>
-                    </div>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-gray-500">Students</span>
-                      <span className="font-bold text-gray-800">1200+</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500">Rating</span>
-                      <span className="font-bold text-brand-purple flex items-center gap-1"><Star size={16} fill="currentColor"/> 4.9</span>
-                    </div>
+                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 space-y-4">
+                    <div className="flex justify-between"><span className="text-gray-500">Students</span><span className="font-bold">1200+</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Courses</span><span className="font-bold">{courses.length}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Rating</span><span className="font-bold text-brand-purple flex gap-1"><Star size={16} fill="currentColor"/> 4.9</span></div>
                   </div>
                 </div>
               </div>
@@ -116,28 +117,15 @@ export default function TutorProfile() {
         </div>
       </main>
       <Footer />
-
-      {/* Message Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md relative animate-slide-in">
             <button onClick={() => setModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20}/></button>
             <h3 className="text-xl font-bold text-brand-dark mb-4">Message {tutor.name}</h3>
-            
-            {msgSent ? (
-              <div className="text-center py-8 text-green-600 font-bold">Message sent successfully!</div>
-            ) : (
+            {msgSent ? <div className="text-center py-8 text-green-600 font-bold">Message sent!</div> : (
               <form onSubmit={handleSendMessage}>
-                <textarea 
-                  required 
-                  className="w-full p-4 border border-gray-200 rounded-xl mb-4 h-32 focus:ring-2 focus:ring-brand-purple outline-none"
-                  placeholder="Write your question here..."
-                  value={message}
-                  onChange={e => setMessage(e.target.value)}
-                ></textarea>
-                <button className="btn btn-plum-gradient w-full py-3 flex justify-center items-center gap-2">
-                  <Send size={18}/> Send Message
-                </button>
+                <textarea required className="w-full p-4 border border-gray-200 rounded-xl mb-4 h-32 focus:ring-2 focus:ring-brand-purple outline-none" placeholder="Write your question..." value={message} onChange={e => setMessage(e.target.value)}></textarea>
+                <button className="btn btn-plum-gradient w-full py-3 flex justify-center items-center gap-2"><Send size={18}/> Send Message</button>
               </form>
             )}
           </div>

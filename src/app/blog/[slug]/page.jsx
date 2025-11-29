@@ -5,8 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import Navbar from '@/components/sections/Navbar'
 import Footer from '@/components/sections/Footer'
-import { Loader2, ArrowLeft, Calendar, User, Send, MessageCircle, Facebook, Twitter, Linkedin, Link as LinkIcon } from 'lucide-react'
+import { Loader2, ArrowLeft, Calendar, Send, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
+import ShareButton from '@/components/ui/ShareButton'
 
 export default function BlogPost() {
   const { slug } = useParams()
@@ -46,8 +47,6 @@ export default function BlogPost() {
     setSubmitting(false)
   }
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
-
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-brand-purple" /></div>
   if (!post) return <div className="min-h-screen flex items-center justify-center">Post not found</div>
 
@@ -67,13 +66,7 @@ export default function BlogPost() {
             <h1 className="text-3xl md:text-4xl font-bold text-brand-dark mb-6 leading-tight">{post.title}</h1>
             <div className="flex items-center justify-between gap-4 text-sm text-gray-500 mb-8 border-b border-gray-100 pb-8">
               <span className="flex items-center gap-2"><Calendar size={16}/> {new Date(post.created_at).toLocaleDateString()}</span>
-              {/* SOCIAL SHARE */}
-              <div className="flex gap-2">
-                <a href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} target="_blank" className="p-2 bg-gray-100 rounded-full hover:bg-blue-100 hover:text-blue-600 transition"><Facebook size={16}/></a>
-                <a href={`https://twitter.com/intent/tweet?url=${shareUrl}`} target="_blank" className="p-2 bg-gray-100 rounded-full hover:bg-sky-100 hover:text-sky-500 transition"><Twitter size={16}/></a>
-                <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${shareUrl}`} target="_blank" className="p-2 bg-gray-100 rounded-full hover:bg-blue-100 hover:text-blue-700 transition"><Linkedin size={16}/></a>
-                <button onClick={() => {navigator.clipboard.writeText(shareUrl); alert("Copied!")}} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"><LinkIcon size={16}/></button>
-              </div>
+              <ShareButton title={post.title} text={post.excerpt} />
             </div>
             <div className="prose prose-lg text-gray-600 max-w-none">
               {post.content.split('\n').map((p, i) => <p key={i} className="mb-4">{p}</p>)}

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Loader2, Trash2, Edit, Plus, Instagram, Youtube, Music2 } from 'lucide-react'
+import FileUploader from './FileUploader'
 
 export default function TutorManager() {
   const [tutors, setTutors] = useState([])
@@ -79,8 +80,15 @@ export default function TutorManager() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input required placeholder="Full Name" className="input-field" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
           <input required placeholder="Role (e.g. Head Teacher)" className="input-field" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} />
-          <input placeholder="Image URL" className="input-field" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
-          <input placeholder="Video Intro URL" className="input-field" value={formData.video_intro} onChange={e => setFormData({...formData, video_intro: e.target.value})} />
+          
+          <FileUploader 
+            bucket="avatars" 
+            label="Profile Photo" 
+            value={formData.image_url} 
+            onUpload={(url) => setFormData({...formData, image_url: url})} 
+          />
+
+          <input placeholder="Video Intro URL (YouTube)" className="input-field" value={formData.video_intro} onChange={e => setFormData({...formData, video_intro: e.target.value})} />
           <input placeholder="Specialties (comma separated)" className="input-field" value={formData.specialties} onChange={e => setFormData({...formData, specialties: e.target.value})} />
           <textarea required placeholder="Bio" className="input-field h-32" value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} />
           

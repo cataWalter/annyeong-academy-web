@@ -27,6 +27,11 @@ export default function MyDownloads() {
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
+  const trackAndDownload = async (url, productId) => {
+    await supabase.from('downloads_log').insert([{ user_id: user.id, product_id: productId }])
+    window.open(url, '_blank')
+  }
+
   if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple" /></div>
 
   return (
@@ -57,9 +62,12 @@ export default function MyDownloads() {
                 </div>
                 
                 {downloadUrl ? (
-                  <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-brand-purple text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition shadow-md hover:shadow-lg">
+                  <button 
+                    onClick={() => trackAndDownload(downloadUrl, item.id)}
+                    className="flex items-center justify-center gap-2 bg-brand-purple text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition shadow-md hover:shadow-lg"
+                  >
                     <Download size={18} /> {t('dl_btn')}
-                  </a>
+                  </button>
                 ) : (
                   <button disabled className="flex items-center justify-center gap-2 bg-gray-100 text-gray-400 px-6 py-3 rounded-xl font-bold cursor-not-allowed">
                     <ExternalLink size={18} /> Link unavailable

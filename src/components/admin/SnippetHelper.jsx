@@ -1,7 +1,15 @@
 "use client";
-import { Code, Link, Type } from 'lucide-react'
+import { Code, Link, Type, HelpCircle } from 'lucide-react'
 
-export default function SnippetHelper({ onInsert }) {
+export default function SnippetHelper({ onInsert, onInsertQuiz }) {
+  const exampleQuiz = JSON.stringify([
+    {
+      "question": "What is the capital of Korea?",
+      "options": ["Busan", "Seoul", "Incheon", "Jeju"],
+      "correct": 1
+    }
+  ], null, 2);
+
   return (
     <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
       <button type="button" onClick={() => onInsert('[[VOCAB::Term|Definition]]')} className="text-xs bg-purple-50 text-purple-700 px-3 py-1 rounded-full border border-purple-100 hover:bg-purple-100 flex items-center gap-1 whitespace-nowrap">
@@ -13,6 +21,11 @@ export default function SnippetHelper({ onInsert }) {
       <button type="button" onClick={() => onInsert('[[DOWNLOAD_URL::https://link.com]]')} className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-100 hover:bg-green-100 flex items-center gap-1 whitespace-nowrap">
         <Code size={12}/> + Download
       </button>
+      {onInsertQuiz && (
+        <button type="button" onClick={() => onInsertQuiz(exampleQuiz)} className="text-xs bg-orange-50 text-orange-700 px-3 py-1 rounded-full border border-orange-100 hover:bg-orange-100 flex items-center gap-1 whitespace-nowrap">
+          <HelpCircle size={12}/> + Quiz Template
+        </button>
+      )}
     </div>
   )
 }
