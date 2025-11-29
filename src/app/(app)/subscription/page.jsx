@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { Loader2, CreditCard, CheckCircle, XCircle, Calendar } from 'lucide-react'
+import confetti from 'canvas-confetti'
 
 export default function SubscriptionPage() {
   const { user } = useAuth()
@@ -19,11 +20,28 @@ export default function SubscriptionPage() {
     setLoading(false)
   }
 
-  const handleCancel = async () => {
-    if(!confirm("Are you sure you want to cancel your subscription? You will lose access at the end of the period.")) return
-    
+  const handleSubscribe = async () => {
+    if (!confirm("Start Premium Subscription? (Mock Payment)")) return
     setLoading(true)
-    // In real app, call Stripe API via Edge Function
+    
+    // Mock creating a subscription
+    const nextMonth = new Date()
+    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    
+    await supabase.from('subscriptions').upsert({
+      user_id: user.id,
+      status: 'active',
+      plan_name: 'Premium Monthly',
+      current_period_end: nextMonth
+    }, { onConflict: 'user_id' })
+    
+    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })
+    fetchSub()
+  }
+
+  const handleCancel = async () => {
+    if(!confirm("Are you sure you want to cancel?")) return
+    setLoading(true)
     await supabase.from('subscriptions').update({ status: 'cancelled' }).eq('user_id', user.id)
     fetchSub()
   }
@@ -37,17 +55,13 @@ export default function SubscriptionPage() {
       </h1>
       <p className="text-gray-500 mb-8">Manage your Premium access.</p>
 
-      {sub ? (
+      {sub && sub.status === 'active' ? (
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
           <div className="flex justify-between items-start mb-6">
             <div>
               <h3 className="text-xl font-bold text-brand-dark">{sub.plan_name}</h3>
               <div className="flex items-center gap-2 mt-2">
-                {sub.status === 'active' ? (
-                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle size={14}/> Active</span>
-                ) : (
-                  <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><XCircle size={14}/> Cancelled</span>
-                )}
+                 <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle size={14}/> Active</span>
               </div>
             </div>
             <div className="text-right">
@@ -64,11 +78,9 @@ export default function SubscriptionPage() {
              <p className="flex items-center gap-3 text-gray-600"><CheckCircle size={18} className="text-brand-purple"/> 10% Store Discount</p>
           </div>
 
-          {sub.status === 'active' && (
-            <button onClick={handleCancel} className="text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition text-sm">
-              Cancel Subscription
-            </button>
-          )}
+          <button onClick={handleCancel} className="text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition text-sm">
+            Cancel Subscription
+          </button>
         </div>
       ) : (
         <div className="bg-gradient-to-br from-brand-purple to-brand-blue p-10 rounded-3xl text-white text-center shadow-xl">
@@ -80,11 +92,12 @@ export default function SubscriptionPage() {
           </div>
 
           <button 
-            onClick={() => alert("Redirecting to Stripe Checkout...")} 
+            onClick={handleSubscribe} 
             className="bg-white text-brand-purple px-8 py-3 rounded-full font-bold shadow-lg hover:scale-105 transition"
           >
             Start Free Trial
           </button>
+          {sub && sub.status === 'cancelled' && <p className="text-xs text-white/50 mt-4">Your previous subscription was cancelled.</p>}
         </div>
       )}
     </div>

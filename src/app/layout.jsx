@@ -7,6 +7,7 @@ import { PaymentProvider } from '@/context/PaymentContext'
 import { ToastProvider } from '@/context/ToastContext'
 import { CartProvider } from '@/context/CartContext'
 import SupabaseConfigWarning from '@/components/auth/SupabaseConfigWarning'
+import CookieConsent from '@/components/ui/CookieConsent'
 
 export default function RootLayout({ children }) {
   return (
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
               <LanguageProvider>
                 <PaymentProvider>
                   {children}
+                  <CookieConsent />
                 </PaymentProvider>
               </LanguageProvider>
             </CartProvider>

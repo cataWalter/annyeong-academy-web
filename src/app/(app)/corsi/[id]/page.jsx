@@ -21,20 +21,27 @@ export default function CoursePage() {
   const [userLevel, setUserLevel] = useState(null)
 
   useEffect(() => {
+    // Update page title for basic SEO (client-side)
+    if(course) document.title = `${course.title} | Annyeong Academy`
+  }, [course])
+
+  useEffect(() => {
     const checkAccess = async () => {
       try {
         const { data: product } = await supabase.from('products').select('*').eq('id', id).single()
         setCourse(product)
 
-        const { data: lessonData } = await supabase.from('lessons').select('id, title, type, description').eq('course_id', id).order('created_at', { ascending: true })
+        const { data: lessonData } = await supabase.from('lessons').select('id, title, type, description, release_date, quiz_data, video_url, pdf_url, quizlet_url').eq('course_id', id).order('created_at', { ascending: true })
         setLessons(lessonData || [])
 
         if (user) {
           const { data: purchase } = await supabase.from('purchases')
             .select('*').eq('user_id', user.id).eq('product_id', id).eq('status', 'completed').single()
-          if (purchase) setHasAccess(true)
+          
+          const { data: sub } = await supabase.from('subscriptions').select('*').eq('user_id', user.id).eq('status', 'active').single()
+          
+          if (purchase || sub) setHasAccess(true)
 
-          // Check Placement Result
           const { data: placement } = await supabase.from('placement_results').select('recommended_level').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).single()
           if (placement) setUserLevel(placement.recommended_level)
         }
@@ -52,13 +59,12 @@ export default function CoursePage() {
 
   if (hasAccess) return <CoursePlayer course={course} lessons={lessons} user={user} />
 
-  // Level Warning Logic
   const showLevelWarning = userLevel && course.level && userLevel.toLowerCase() !== course.level.toLowerCase() && course.level !== 'All Levels';
 
   return (
-    <div className="max-w-5xl mx-auto pb-20">
-      <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-8 items-center mb-8">
-        <div className="w-full md:w-1/3 aspect-square bg-gray-200 rounded-2xl overflow-hidden relative">
+    <div className="max-w-5xl mx-auto pb-20 pt-10 px-4">
+      <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-8 items-center mb-8 animate-fade-in">
+        <div className="w-full md:w-1/3 aspect-square bg-gray-200 rounded-2xl overflow-hidden relative shadow-md">
           <img src={course.image_url || 'https://placehold.co/400'} alt={course.title} className="w-full h-full object-cover" />
         </div>
         <div className="flex-1">
@@ -81,8 +87,7 @@ export default function CoursePage() {
                 <AlertTriangle className="text-orange-500 flex-shrink-0" size={20}/>
                 <div>
                   <p className="font-bold text-orange-800 text-sm">Level Mismatch</p>
-                  <p className="text-orange-700 text-sm">Your placement test recommended <strong>{userLevel}</strong>, but this course is <strong>{course.level}</strong>. It might be too difficult or too easy.</p>
-                  <Link href="/placement-test" className="text-xs font-bold text-orange-900 underline mt-1 block">Retake Test</Link>
+                  <p className="text-orange-700 text-sm">Your placement test recommended <strong>{userLevel}</strong>, but this course is <strong>{course.level}</strong>.</p>
                 </div>
               </div>
             </div>
@@ -101,7 +106,7 @@ export default function CoursePage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-100"><h2 className="font-bold text-xl text-gray-800">Curriculum Preview</h2></div>
+        <div className="p-6 border-b border-gray-100 bg-gray-50/50"><h2 className="font-bold text-xl text-gray-800">Curriculum Preview</h2></div>
         {lessons.map((lesson, idx) => (
           <div key={lesson.id} className="p-4 border-b border-gray-100 last:border-0 flex items-center justify-between hover:bg-gray-50 transition">
             <div className="flex items-center gap-4">
@@ -110,6 +115,7 @@ export default function CoursePage() {
             </div>
           </div>
         ))}
+        {lessons.length === 0 && <div className="p-8 text-center text-gray-400">No lessons yet.</div>}
       </div>
     </div>
   )

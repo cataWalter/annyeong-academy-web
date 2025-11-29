@@ -6,7 +6,7 @@ import { useGamification } from '@/hooks/useGamification'
 import { useLanguage } from '@/context/LanguageContext'
 import Link from 'next/link'
 import { BookOpen, Loader2, PlayCircle, Calendar, Download, ArrowRight, Award, Zap, Flame, Clock, StickyNote } from 'lucide-react'
-import ReferralCard from '@/components/dashboard/ReferralCard' // NEW
+import ReferralCard from '@/components/dashboard/ReferralCard'
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
@@ -54,7 +54,7 @@ export default function Dashboard() {
              const last = userProgress.find(p => p.course_id === course.id)
              if (last) {
                const lTitle = courseLessons.find(cl => cl.id === last.lesson_id)?.title
-               lastAccessData[course.id] = lTitle
+               lastAccessData[course.id] = { title: lTitle, id: last.lesson_id } // Store ID and Title
              }
           })
           setProgressMap(progressData)
@@ -96,9 +96,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left Column */}
         <div className="lg:col-span-2 space-y-8">
-          
           <section>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-brand-dark">{t('dash_my_courses')}</h2>
@@ -108,7 +106,7 @@ export default function Dashboard() {
               <div className="space-y-4">
                 {courses.map(course => {
                   const progress = progressMap[course.id] || 0
-                  const lastLesson = lastAccessed[course.id]
+                  const last = lastAccessed[course.id]
                   return (
                     <div key={course.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group relative overflow-hidden">
                       <div className="absolute bottom-0 left-0 h-1 bg-gray-100 w-full">
@@ -121,12 +119,15 @@ export default function Dashboard() {
                         <div className="flex-1 min-w-0 py-1 flex flex-col justify-between h-24">
                           <div>
                              <h3 className="font-bold text-brand-dark text-lg truncate">{course.title}</h3>
-                             <p className="text-xs text-gray-500 mt-1">{lastLesson ? `Resume: ${lastLesson}` : 'Start your journey'}</p>
+                             <p className="text-xs text-gray-500 mt-1">{last ? `Resume: ${last.title}` : 'Start your journey'}</p>
                           </div>
                           <div className="flex items-end justify-between">
                              <span className={`text-xs font-bold ${progress === 100 ? "text-green-600" : "text-gray-400"}`}>
                                 {progress === 100 ? "Completed! 🏆" : `${progress}% Complete`}
                              </span>
+                             {/* Note: We might need to pass query param or state to jump to specific lesson in player, 
+                                 but currently player defaults to first or needs logic. 
+                                 For now, linking to course page is safe, and CoursePlayer handles logic. */}
                              <Link href={`/corsi/${course.id}`} className="bg-brand-dark text-white pl-3 pr-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-brand-purple transition flex items-center gap-2 transform hover:-translate-y-0.5">
                                 <PlayCircle size={16} /> {progress === 0 ? "Start" : "Resume"}
                              </Link>
@@ -163,13 +164,8 @@ export default function Dashboard() {
           </section>
         </div>
 
-        {/* Right Column */}
         <div className="space-y-8">
-           
-           {/* Referral Card */}
            <ReferralCard />
-
-           {/* My Calendar */}
            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Calendar size={20} className="text-brand-purple"/> My Calendar</h3>
               {upcomingEvents.length > 0 ? (
@@ -195,8 +191,6 @@ export default function Dashboard() {
                  </div>
               )}
            </div>
-
-           {/* League Card */}
            <div className="bg-gradient-to-br from-brand-dark to-[#2a3b55] rounded-2xl p-6 text-white relative overflow-hidden shadow-lg">
               <div className="relative z-10">
                  <div className="flex items-center justify-between mb-4">

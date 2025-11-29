@@ -1,14 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Allow images from specific domains
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'placehold.co' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'lkqbkhaklhenhlahgvhj.supabase.co' }
+      { protocol: 'https', hostname: 'lkqbkhaklhenhlahgvhj.supabase.co' }, // Add your project ID if different
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: '*.supabase.co' }
     ],
   },
-  // Handle SPA-style fallbacks if necessary (though App Router handles this natively)
   async rewrites() {
     return [
       {

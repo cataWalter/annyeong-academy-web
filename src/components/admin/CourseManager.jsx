@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Loader2, Trash2, Edit, Video, HelpCircle, Plus, Calendar } from 'lucide-react'
+import { Loader2, Trash2, Edit, Video, HelpCircle, Plus, Calendar, Folder } from 'lucide-react'
+import SnippetHelper from './SnippetHelper'
 
 export default function CourseManager() {
   const [courses, setCourses] = useState([])
@@ -11,19 +12,16 @@ export default function CourseManager() {
   const [editing, setEditing] = useState(null)
   
   const [formData, setFormData] = useState({ 
-    title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: ''
+    title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: '', module: 'General'
   })
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  useEffect(() => { fetchData() }, [])
 
   const fetchData = async () => {
     setLoading(true)
     const { data: c } = await supabase.from('products').select('*').eq('type', 'course')
     setCourses(c || [])
     if (c && c.length > 0 && !selectedCourse) setSelectedCourse(c[0].id)
-    
     if (selectedCourse) {
       const { data: l } = await supabase.from('lessons').select('*').eq('course_id', selectedCourse).order('created_at', { ascending: true })
       setLessons(l || [])
@@ -31,15 +29,13 @@ export default function CourseManager() {
     setLoading(false)
   }
 
-  useEffect(() => {
-    if(selectedCourse) fetchData()
-  }, [selectedCourse])
+  useEffect(() => { if(selectedCourse) fetchData() }, [selectedCourse])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!selectedCourse) return alert("Select a course first")
-    
     setLoading(true)
+    
     let parsedQuiz = null
     if (formData.quiz_data) {
       try { parsedQuiz = JSON.parse(formData.quiz_data) } catch { alert("Invalid Quiz JSON"); setLoading(false); return; }
@@ -52,29 +48,25 @@ export default function CourseManager() {
       video_url: formData.video_url, 
       description: formData.description, 
       quiz_data: parsedQuiz,
-      release_date: formData.release_date || new Date().toISOString()
+      release_date: formData.release_date || new Date().toISOString(),
+      module: formData.module || 'General'
     }
 
-    if (editing) {
-      await supabase.from('lessons').update(payload).eq('id', editing.id)
-    } else {
-      await supabase.from('lessons').insert([payload])
-    }
+    if (editing) await supabase.from('lessons').update(payload).eq('id', editing.id)
+    else await supabase.from('lessons').insert([payload])
 
     setEditing(null)
-    setFormData({ title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: '' })
+    setFormData({ title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: '', module: 'General' })
     fetchData()
   }
 
   const handleEdit = (lesson) => {
     setEditing(lesson)
     setFormData({
-      title: lesson.title, 
-      video_url: lesson.video_url || '', 
-      description: lesson.description || '',
-      type: lesson.type || 'video', 
-      quiz_data: lesson.quiz_data ? JSON.stringify(lesson.quiz_data, null, 2) : '',
-      release_date: lesson.release_date ? new Date(lesson.release_date).toISOString().slice(0,16) : ''
+      title: lesson.title, video_url: lesson.video_url || '', description: lesson.description || '',
+      type: lesson.type || 'video', quiz_data: lesson.quiz_data ? JSON.stringify(lesson.quiz_data, null, 2) : '',
+      release_date: lesson.release_date ? new Date(lesson.release_date).toISOString().slice(0,16) : '',
+      module: lesson.module || 'General'
     })
   }
 
@@ -83,6 +75,15 @@ export default function CourseManager() {
     await supabase.from('lessons').delete().eq('id', id)
     fetchData()
   }
+
+  const insertSnippet = (text) => setFormData(prev => ({ ...prev, description: prev.description + text }))
+
+  const groupedLessons = lessons.reduce((acc, lesson) => {
+    const mod = lesson.module || 'General'
+    if (!acc[mod]) acc[mod] = []
+    acc[mod].push(lesson)
+    return acc
+  }, {})
 
   return (
     <div className="grid lg:grid-cols-3 gap-8">
@@ -96,47 +97,53 @@ export default function CourseManager() {
 
         <h3 className="font-bold text-lg mb-4 border-t border-gray-100 pt-4">{editing ? 'Edit Lesson' : 'Add Lesson'}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input required placeholder="Lesson Title" className="input-field" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
-          
-          <div className="grid grid-cols-2 gap-2">
-            <select className="input-field" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
-              <option value="video">Video</option><option value="audio">Audio</option>
-            </select>
-            <input type="datetime-local" className="input-field" title="Release Date (Drip Content)" value={formData.release_date} onChange={e => setFormData({...formData, release_date: e.target.value})} />
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Module</label>
+            <input list="modules" className="input-field" value={formData.module} onChange={e => setFormData({...formData, module: e.target.value})} placeholder="e.g. Introduction" />
+            <datalist id="modules">{Object.keys(groupedLessons).map(m => <option key={m} value={m} />)}</datalist>
           </div>
-
+          <input required placeholder="Lesson Title" className="input-field" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+          <div className="grid grid-cols-2 gap-2">
+            <select className="input-field" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}><option value="video">Video</option><option value="audio">Audio</option></select>
+            <input type="datetime-local" className="input-field" value={formData.release_date} onChange={e => setFormData({...formData, release_date: e.target.value})} />
+          </div>
           <input placeholder="Video/Audio URL" className="input-field" value={formData.video_url} onChange={e => setFormData({...formData, video_url: e.target.value})} />
-          <textarea placeholder="Description / Vocabulary" className="input-field h-24" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
           
           <div>
-            <label className="text-xs font-bold text-gray-500 mb-1 block">Quiz Data (JSON)</label>
-            <textarea placeholder='[{"question":"...","options":["A","B"],"correct":0}]' className="input-field h-24 font-mono text-xs" value={formData.quiz_data} onChange={e => setFormData({...formData, quiz_data: e.target.value})} />
+             <SnippetHelper onInsert={insertSnippet} />
+             <textarea placeholder="Description / Vocabulary" className="input-field h-24" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
           </div>
+          
+          <textarea placeholder='Quiz JSON: [{"question":"...","options":["A","B"],"correct":0}]' className="input-field h-24 font-mono text-xs" value={formData.quiz_data} onChange={e => setFormData({...formData, quiz_data: e.target.value})} />
 
           <div className="flex gap-2">
             <button type="submit" disabled={loading} className="btn btn-plum-gradient w-full py-2">{loading ? 'Saving...' : 'Save Lesson'}</button>
-            {editing && <button type="button" onClick={() => {setEditing(null); setFormData({ title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: '' })}} className="px-4 py-2 bg-gray-100 rounded-lg text-gray-600">Cancel</button>}
+            {editing && <button type="button" onClick={() => {setEditing(null); setFormData({ title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: '', module: 'General' })}} className="px-4 py-2 bg-gray-100 rounded-lg text-gray-600">Cancel</button>}
           </div>
         </form>
       </div>
 
-      <div className="lg:col-span-2 space-y-4">
-        {lessons.length === 0 && <div className="text-gray-400 text-center py-10 border border-dashed border-gray-200 rounded-xl">No lessons in this course yet.</div>}
-        {lessons.map(l => (
-          <div key={l.id} className="bg-white p-4 rounded-xl border border-gray-100 flex gap-4 items-center">
-            <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center text-brand-purple shrink-0">
-               {l.type === 'audio' ? <Plus size={20}/> : <Video size={20}/>}
-            </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-gray-800">{l.title}</h4>
-              <div className="flex gap-2 mt-1 text-xs">
-                {l.quiz_data && <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit"><HelpCircle size={10}/> Quiz</span>}
-                {l.release_date && new Date(l.release_date) > new Date() && <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit"><Calendar size={10}/> Scheduled: {new Date(l.release_date).toLocaleDateString()}</span>}
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <button onClick={() => handleEdit(l)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit size={18}/></button>
-              <button onClick={() => handleDelete(l.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={18}/></button>
+      <div className="lg:col-span-2 space-y-6">
+        {Object.entries(groupedLessons).map(([moduleName, moduleLessons]) => (
+          <div key={moduleName} className="bg-white p-4 rounded-2xl border border-gray-100">
+            <h4 className="font-bold text-brand-dark flex items-center gap-2 mb-4 px-2"><Folder size={18} className="text-brand-purple"/> {moduleName}</h4>
+            <div className="space-y-2">
+              {moduleLessons.map(l => (
+                <div key={l.id} className="bg-gray-50 p-3 rounded-xl flex gap-4 items-center group hover:bg-white hover:shadow-sm transition border border-transparent hover:border-gray-100">
+                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-brand-purple shrink-0 shadow-sm">{l.type === 'audio' ? <Plus size={16}/> : <Video size={16}/>}</div>
+                  <div className="flex-1">
+                    <h5 className="font-bold text-gray-700 text-sm">{l.title}</h5>
+                    <div className="flex gap-2 mt-1 text-[10px]">
+                      {l.quiz_data && <span className="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded flex items-center gap-1"><HelpCircle size={8}/> Quiz</span>}
+                      {l.release_date && new Date(l.release_date) > new Date() && <span className="bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded flex items-center gap-1"><Calendar size={8}/> Scheduled</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => handleEdit(l)} className="p-2 text-gray-400 hover:text-blue-500"><Edit size={16}/></button>
+                    <button onClick={() => handleDelete(l.id)} className="p-2 text-gray-400 hover:text-red-500"><Trash2 size={16}/></button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}

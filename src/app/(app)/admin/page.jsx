@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { 
-  LayoutList, Loader2, Users, GraduationCap, DollarSign,
-  Megaphone, Mail, PenTool, Brain, Calendar, ShoppingBag, LayoutTemplate, BarChart2, UserCheck, HelpCircle, MessageSquare, Gift, Settings
+  LayoutList, Loader2, Users, GraduationCap, DollarSign, Database,
+  Megaphone, Mail, PenTool, Brain, Calendar, ShoppingBag, LayoutTemplate, BarChart2, UserCheck, HelpCircle, MessageSquare, Gift, Settings, FileText
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -23,7 +23,10 @@ import ReviewManager from '@/components/admin/ReviewManager'
 import TestManager from '@/components/admin/TestManager'
 import GiveawayManager from '@/components/admin/GiveawayManager'
 import SettingsManager from '@/components/admin/SettingsManager'
-import OrderManager from '@/components/admin/OrderManager' // NEW
+import OrderManager from '@/components/admin/OrderManager'
+import HomeworkManager from '@/components/admin/HomeworkManager'
+import FeedbackViewer from '@/components/admin/FeedbackViewer'
+import SeedManager from '@/components/admin/SeedManager' // NEW
 
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth()
@@ -39,19 +42,22 @@ export default function AdminDashboard() {
       <div className="flex gap-2 mb-8 border-b border-gray-200 overflow-x-auto pb-1">
         {[
           { id: 'analytics', icon: BarChart2, label: 'Overview' },
-          { id: 'orders', icon: DollarSign, label: 'Sales' }, // NEW
-          { id: 'settings', icon: Settings, label: 'Settings' },
+          { id: 'orders', icon: DollarSign, label: 'Sales' },
+          { id: 'grading', icon: FileText, label: 'Homework' },
           { id: 'lessons', icon: LayoutList, label: 'Courses' },
-          { id: 'reviews', icon: MessageSquare, label: 'Reviews' },
-          { id: 'tutors', icon: UserCheck, label: 'Tutors' },
-          { id: 'events', icon: Calendar, label: 'Events' },
-          { id: 'cms', icon: LayoutTemplate, label: 'CMS' },
-          { id: 'tests', icon: Brain, label: 'Tests' },
-          { id: 'giveaway', icon: Gift, label: 'Giveaway' },
-          { id: 'faq', icon: HelpCircle, label: 'FAQ' },
-          { id: 'shop', icon: ShoppingBag, label: 'Shop' },
-          { id: 'blog', icon: PenTool, label: 'Blog' },
+          { id: 'db', icon: Database, label: 'DB Tools' }, // NEW
+          { id: 'settings', icon: Settings, label: 'Settings' },
           { id: 'students', icon: GraduationCap, label: 'Students' },
+          { id: 'events', icon: Calendar, label: 'Events' },
+          { id: 'tutors', icon: UserCheck, label: 'Tutors' },
+          { id: 'blog', icon: PenTool, label: 'Blog' },
+          { id: 'shop', icon: ShoppingBag, label: 'Shop' },
+          { id: 'reviews', icon: MessageSquare, label: 'Reviews' },
+          { id: 'feedback', icon: MessageSquare, label: 'Feedback' },
+          { id: 'giveaway', icon: Gift, label: 'Giveaway' },
+          { id: 'tests', icon: Brain, label: 'Tests' },
+          { id: 'cms', icon: LayoutTemplate, label: 'CMS' },
+          { id: 'faq', icon: HelpCircle, label: 'FAQ' },
           { id: 'leads', icon: Users, label: 'CRM' },
           { id: 'announce', icon: Megaphone, label: 'Alerts' },
         ].map(tab => (
@@ -64,7 +70,9 @@ export default function AdminDashboard() {
       <div className="animate-fade-in">
         {activeTab === 'analytics' && <AnalyticsManager />}
         {activeTab === 'orders' && <OrderManager />}
-        {activeTab === 'settings' && <SettingsManager />}
+        {activeTab === 'grading' && <HomeworkManager />}
+        {activeTab === 'db' && <SeedManager />}
+        {activeTab === 'feedback' && <FeedbackViewer />}
         {activeTab === 'lessons' && <CourseManager />}
         {activeTab === 'reviews' && <ReviewManager />}
         {activeTab === 'tutors' && <TutorManager />}
@@ -78,6 +86,7 @@ export default function AdminDashboard() {
         {activeTab === 'students' && <StudentManager />}
         {activeTab === 'leads' && <LeadsManager />}
         {activeTab === 'announce' && <AnnouncementManager />}
+        {activeTab === 'settings' && <SettingsManager />}
       </div>
     </div>
   )

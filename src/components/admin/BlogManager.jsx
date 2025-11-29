@@ -1,13 +1,15 @@
 "use client";
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Loader2, Trash2, Edit, Plus, Image } from 'lucide-react'
+import MarkdownToolbar from '@/components/ui/MarkdownToolbar'
 
 export default function BlogManager() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [formData, setFormData] = useState({ title: '', content: '', excerpt: '', image_url: '', tags: '' })
+  const contentRef = useRef(null)
 
   useEffect(() => { fetchPosts() }, [])
 
@@ -62,7 +64,18 @@ export default function BlogManager() {
           <input placeholder="Image URL" className="input-field" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
           <input placeholder="Tags (comma separated)" className="input-field" value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} />
           <textarea placeholder="Short Excerpt" className="input-field h-20" value={formData.excerpt} onChange={e => setFormData({...formData, excerpt: e.target.value})} />
-          <textarea required placeholder="Content (Markdown)" className="input-field h-40 font-mono text-sm" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} />
+          
+          <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <MarkdownToolbar textareaRef={contentRef} value={formData.content} setValue={(val) => setFormData({...formData, content: val})} />
+            <textarea 
+              ref={contentRef}
+              required 
+              placeholder="Content (Markdown supported)..." 
+              className="w-full p-3 h-64 font-mono text-sm outline-none resize-none bg-white"
+              value={formData.content} 
+              onChange={e => setFormData({...formData, content: e.target.value})} 
+            />
+          </div>
           
           <div className="flex gap-2">
             <button type="submit" disabled={loading} className="btn btn-plum-gradient w-full py-2">{loading ? 'Saving...' : 'Save Post'}</button>
