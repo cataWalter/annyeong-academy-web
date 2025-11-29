@@ -1,57 +1,52 @@
 "use client";
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { usePayment } from '@/context/PaymentContext'
 import { useLanguage } from '@/context/LanguageContext'
-import { Video, Loader2, PlayCircle, ShoppingCart, Search } from 'lucide-react'
+import { Video, Loader2, PlayCircle, ShoppingCart, Search, X, Star } from 'lucide-react'
 import Link from 'next/link'
 import { cleanDescription } from '@/lib/helpers'
+import WishlistButton from '@/components/ui/WishlistButton'
 
 export default function Courses() {
   const { user } = useAuth()
   const { t } = useLanguage()
   const { initiateCheckout } = usePayment()
+  const searchParams = useSearchParams()
+  
   const [courses, setCourses] = useState([])
   const [purchasedIds, setPurchasedIds] = useState([])
   const [loading, setLoading] = useState(true)
-  
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState('all')
 
   useEffect(() => {
-    fetchData()
-  }, [user])
+    const levelParam = searchParams.get('level')
+    if (levelParam) setSearchTerm(levelParam)
+  }, [searchParams])
+
+  useEffect(() => { fetchData() }, [user])
 
   const fetchData = async () => {
     try {
-      const { data, error } = await supabase.from('products').select('*').eq('type', 'course')
-      if (error) throw error
+      // FETCH FROM VIEW FOR RATINGS
+      const { data } = await supabase.from('product_stats').select('*').eq('type', 'course')
       setCourses(data || [])
-
       if (user) {
-        const { data: purchases } = await supabase
-          .from('purchases')
-          .select('product_id')
-          .eq('user_id', user.id)
-          .eq('status', 'completed')
-        
+        const { data: purchases } = await supabase.from('purchases').select('product_id').eq('user_id', user.id).eq('status', 'completed')
         if (purchases) setPurchasedIds(purchases.map(p => p.product_id))
       }
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setLoading(false)
-    }
+    } catch (error) { console.error(error) } finally { setLoading(false) }
   }
 
   const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          course.description?.toLowerCase().includes(searchTerm.toLowerCase())
     const isOwned = purchasedIds.includes(course.id)
-    
     if (filter === 'owned' && !isOwned) return false
     if (filter === 'not_owned' && isOwned) return false
-    
     return matchesSearch
   })
 
@@ -68,18 +63,13 @@ export default function Courses() {
           <div className="relative flex-1 md:w-64">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
             <input 
-              type="text" 
-              placeholder={t('course_search')}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl outline-none focus:border-brand-purple"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              type="text" placeholder={t('course_search')}
+              className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-xl outline-none focus:border-brand-purple transition"
+              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
             />
+            {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={14}/></button>}
           </div>
-          <select 
-            className="px-4 py-2 border border-gray-200 rounded-xl outline-none bg-white text-gray-600 text-sm font-bold"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
+          <select className="px-4 py-2 border border-gray-200 rounded-xl outline-none bg-white text-gray-600 text-sm font-bold" value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="all">{t('course_filter_all')}</option>
             <option value="owned">{t('course_filter_owned')}</option>
             <option value="not_owned">{t('course_filter_not')}</option>
@@ -90,45 +80,44 @@ export default function Courses() {
       {filteredCourses.length === 0 && (
         <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
           <p className="text-gray-500 font-medium">{t('course_no_results')}</p>
+          <button onClick={() => {setSearchTerm(''); setFilter('all')}} className="text-brand-purple font-bold mt-2 hover:underline">Clear Filters</button>
         </div>
       )}
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCourses.map(course => {
           const isOwned = purchasedIds.includes(course.id)
+          const rating = parseFloat(course.avg_rating || 0).toFixed(1)
 
           return (
-            <div key={course.id} className={`bg-white rounded-2xl overflow-hidden border transition group flex flex-col ${isOwned ? 'border-green-200 shadow-sm' : 'border-gray-100 hover:shadow-md'}`}>
+            <div key={course.id} className={`bg-white rounded-2xl overflow-hidden border transition group flex flex-col relative ${isOwned ? 'border-green-200 shadow-sm' : 'border-gray-100 hover:shadow-md'}`}>
               <div className="h-48 overflow-hidden relative bg-gray-100">
-                <img 
-                  src={course.image_url || 'https://placehold.co/600x400/6a11cb/ffffff?text=Course'} 
-                  alt={course.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
-                />
+                <img src={course.image_url || 'https://placehold.co/600x400/6a11cb/ffffff?text=Course'} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                 <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-brand-dark flex items-center gap-1">
-                  <Video size={12} className="text-blue-500" /> VIDEO
+                  <Video size={12} className="text-blue-500" /> {course.level || 'All Levels'}
+                </div>
+                <div className="absolute top-4 left-4">
+                  <WishlistButton productId={course.id} />
                 </div>
               </div>
               
               <div className="p-6 flex-1 flex flex-col">
-                <h3 className="text-xl font-bold text-brand-dark mb-2">{course.title}</h3>
+                <div className="flex justify-between items-start mb-2">
+                   <h3 className="text-xl font-bold text-brand-dark">{course.title}</h3>
+                   <div className="flex items-center gap-1 text-xs font-bold text-gray-500 bg-gray-50 px-2 py-1 rounded-lg">
+                      <Star size={12} className="text-yellow-400 fill-yellow-400"/> {rating} ({course.review_count})
+                   </div>
+                </div>
                 <p className="text-sm text-gray-500 mb-4 line-clamp-2 flex-1">{cleanDescription(course.description)}</p>
-                
                 <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                   {isOwned ? (
-                     <Link 
-                       href={`/corsi/${course.id}`}
-                       className="w-full bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition flex items-center justify-center gap-2"
-                     >
+                     <Link href={`/corsi/${course.id}`} className="w-full bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition flex items-center justify-center gap-2">
                        <PlayCircle size={16} /> {t('course_access')}
                      </Link>
                   ) : (
                     <>
                       <span className="text-2xl font-bold text-brand-purple">{course.price}</span>
-                      <button 
-                        onClick={() => initiateCheckout(course)}
-                        className="bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition flex items-center gap-2"
-                      >
+                      <button onClick={() => initiateCheckout(course)} className="bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition flex items-center gap-2">
                         <ShoppingCart size={16}/> {t('course_enroll')}
                       </button>
                     </>

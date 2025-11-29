@@ -2,43 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --brand-teal: #4A88B0;
+  --brand-purple: #5E3891;
+  --plum-100: #E6CEDB;
+  --plum-500: #9B3E83;
+  --plum-700: #6A2C5D;
+}
+
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Poppins', sans-serif;
     background-color: #F8F9FC;
     margin: 0;
     color: #192335;
 }
 
-/* Smooth Scroll */
-html {
-  scroll-behavior: smooth;
+/* --- BRAND IDENTITY --- */
+
+/* Core Brand Gradient (Vertical: Top to Bottom) */
+/* Used for H1 and Logo */
+.text-gradient-brand {
+  background: linear-gradient(180deg, var(--brand-teal) 0%, var(--brand-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block; /* Often needed for clip to work on some browsers */
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* --- BUTTONS --- */
+
+/* Base Button Structure */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 28px;
+  border-radius: 50px; /* Pill shape */
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+/* Plum Gradient Button (Horizontal: Left to Right) */
+.btn-plum-gradient {
+  background: linear-gradient(90deg, var(--plum-700) 0%, var(--plum-500) 100%);
+  color: white;
+  box-shadow: 0 4px 6px rgba(106, 44, 93, 0.2);
 }
 
-::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
-
-/* Details Animation */
-details > summary {
-  list-style: none;
-}
-details > summary::-webkit-details-marker {
-  display: none;
+.btn-plum-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(106, 44, 93, 0.4);
 }
 
 /* Animations */
@@ -46,7 +63,6 @@ details > summary::-webkit-details-marker {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out forwards;
 }

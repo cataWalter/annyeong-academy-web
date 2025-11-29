@@ -5,178 +5,213 @@ import { supabase } from '@/lib/supabase'
 import { useGamification } from '@/hooks/useGamification'
 import { useLanguage } from '@/context/LanguageContext'
 import Link from 'next/link'
-import { BookOpen, Loader2, PlayCircle, Calendar, Download, ArrowRight, Award, Zap, Flame } from 'lucide-react'
+import { BookOpen, Loader2, PlayCircle, Calendar, Download, ArrowRight, Award, Zap, Flame, Clock, StickyNote } from 'lucide-react'
+import ReferralCard from '@/components/dashboard/ReferralCard' // NEW
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
   const { t } = useLanguage()
-  
-  // Destructure safely with default fallback
-  const { stats = { xp: 0, streak: 0 }, loading: gameLoading } = useGamification()
+  const { points, streak, level, loading: gameLoading } = useGamification(user?.id)
   
   const [loading, setLoading] = useState(true)
   const [courses, setCourses] = useState([])
-  const [liveLessons, setLiveLessons] = useState([])
+  const [upcomingEvents, setUpcomingEvents] = useState([])
   const [ebooks, setEbooks] = useState([])
   const [progressMap, setProgressMap] = useState({})
+  const [lastAccessed, setLastAccessed] = useState({})
 
   useEffect(() => { if (user) fetchData() }, [user])
 
   const fetchData = async () => {
     try {
       const { data: purchases } = await supabase.from('purchases').select('product_id').eq('user_id', user.id).eq('status', 'completed')
+      
       if (purchases && purchases.length > 0) {
         const ids = purchases.map(p => p.product_id)
         const { data: products } = await supabase.from('products').select('*').in('id', ids)
+
         if (products) {
           const myCourses = products.filter(p => p.type === 'course')
           setCourses(myCourses)
-          setLiveLessons(products.filter(p => p.type === 'standalone'))
+          
+          const live = products.filter(p => p.type === 'standalone' && new Date(p.event_date) > new Date())
+          setUpcomingEvents(live.sort((a,b) => new Date(a.event_date) - new Date(b.event_date)))
+          
           setEbooks(products.filter(p => p.type === 'ebook'))
 
-          // Calculate Progress
           const progressData = {}
-          const { data: userProgress } = await supabase.from('lesson_progress').select('course_id').eq('user_id', user.id)
-          const { data: allLessons } = await supabase.from('lessons').select('course_id').in('course_id', myCourses.map(c => c.id))
+          const lastAccessData = {}
+          
+          const { data: userProgress } = await supabase.from('lesson_progress').select('*').eq('user_id', user.id).order('last_accessed', { ascending: false })
+          const { data: allLessons } = await supabase.from('lessons').select('id, course_id, title').in('course_id', myCourses.map(c => c.id))
 
           myCourses.forEach(course => {
-             const total = allLessons.filter(l => l.course_id === course.id).length
+             const courseLessons = allLessons.filter(l => l.course_id === course.id)
+             const total = courseLessons.length
              const completed = userProgress.filter(p => p.course_id === course.id).length
              progressData[course.id] = total > 0 ? Math.round((completed / total) * 100) : 0
+             
+             const last = userProgress.find(p => p.course_id === course.id)
+             if (last) {
+               const lTitle = courseLessons.find(cl => cl.id === last.lesson_id)?.title
+               lastAccessData[course.id] = lTitle
+             }
           })
           setProgressMap(progressData)
+          setLastAccessed(lastAccessData)
         }
       }
     } catch (error) { console.error(error) } 
     finally { setLoading(false) }
   }
 
-  // Combine loading states
-  if (loading || gameLoading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple" /></div>
+  if (loading || gameLoading) return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="animate-spin text-brand-purple" size={40} /></div>
 
   const displayName = profile?.full_name ? profile.full_name.split(' ')[0] : user?.email?.split('@')[0]
 
   return (
-    <div className="pb-10">
+    <div className="pb-10 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-brand-dark mb-1">{t('dash_hello')}, {displayName}! 👋</h1>
           <p className="text-gray-500">{t('dash_ready')}</p>
         </div>
         
-        {/* Gamification Stats Header */}
         <div className="flex gap-4">
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
-              <div className="bg-orange-100 p-1.5 rounded-lg"><Flame size={20} className="text-orange-500 fill-orange-500"/></div>
+           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3">
+              <div className="bg-orange-100 p-2 rounded-lg"><Flame size={20} className="text-orange-500 fill-orange-500"/></div>
               <div>
-                 <p className="text-xs text-gray-400 font-bold uppercase">{t('dash_streak')}</p>
-                 <p className="font-bold text-brand-dark">{stats?.streak || 0} {t('dash_days')}</p>
+                 <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{t('dash_streak')}</p>
+                 <p className="font-bold text-brand-dark text-lg">{streak} <span className="text-sm font-normal text-gray-500">{t('dash_days')}</span></p>
               </div>
            </div>
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-2">
-              <div className="bg-yellow-100 p-1.5 rounded-lg"><Zap size={20} className="text-yellow-500 fill-yellow-500"/></div>
+           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3">
+              <div className="bg-yellow-100 p-2 rounded-lg"><Zap size={20} className="text-yellow-500 fill-yellow-500"/></div>
               <div>
-                 <p className="text-xs text-gray-400 font-bold uppercase">{t('dash_xp')}</p>
-                 <p className="font-bold text-brand-dark">{stats?.xp || 0} XP</p>
+                 <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{t('dash_xp')}</p>
+                 <p className="font-bold text-brand-dark text-lg">{points} <span className="text-sm font-normal text-gray-500">XP</span></p>
               </div>
            </div>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-6 mb-12">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 hover:shadow-md transition">
-          <div className="flex justify-between items-start">
-            <div><p className="text-gray-500 text-xs font-bold uppercase tracking-wider">{t('dash_my_courses')}</p><p className="text-3xl font-bold text-brand-purple mt-1">{courses.length}</p></div>
-            <div className="bg-purple-50 p-2 rounded-lg text-brand-purple"><BookOpen size={20}/></div>
-          </div>
-          <Link href="/corsi" className="text-xs font-bold text-gray-400 hover:text-brand-purple flex items-center gap-1 transition">{t('dash_view_catalog')} <ArrowRight size={12}/></Link>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 hover:shadow-md transition">
-          <div className="flex justify-between items-start">
-            <div><p className="text-gray-500 text-xs font-bold uppercase tracking-wider">{t('dash_live_credits')}</p><p className="text-3xl font-bold text-brand-blue mt-1">{liveLessons.length}</p></div>
-            <div className="bg-blue-50 p-2 rounded-lg text-brand-blue"><Calendar size={20}/></div>
-          </div>
-          <Link href="/lezioni-live" className="text-xs font-bold text-gray-400 hover:text-brand-blue flex items-center gap-1 transition">{t('dash_book_new')} <ArrowRight size={12}/></Link>
-        </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between h-32 hover:shadow-md transition">
-          <div className="flex justify-between items-start">
-            <div><p className="text-gray-500 text-xs font-bold uppercase tracking-wider">{t('dash_files')}</p><p className="text-3xl font-bold text-gray-700 mt-1">{ebooks.length}</p></div>
-            <div className="bg-gray-50 p-2 rounded-lg text-gray-600"><Download size={20}/></div>
-          </div>
-          <Link href="/downloads" className="text-xs font-bold text-gray-400 hover:text-gray-600 flex items-center gap-1 transition">{t('dash_go_files')} <ArrowRight size={12}/></Link>
         </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-xl font-bold text-brand-dark">{t('dash_my_courses')}</h2>
-          {courses.length > 0 ? (
-            <div className="space-y-4">
-              {courses.map(course => {
-                const progress = progressMap[course.id] || 0
-                return (
-                  <div key={course.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group">
-                    <div className="flex items-start gap-4">
-                      <div className="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative">
-                         <img src={course.image_url || 'https://placehold.co/150'} alt={course.title} className="w-full h-full object-cover" />
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          <section>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-brand-dark">{t('dash_my_courses')}</h2>
+              {courses.length > 0 && <Link href="/notebook" className="text-sm font-bold text-brand-purple flex items-center gap-1 hover:underline"><StickyNote size={16}/> {t('nb_title')}</Link>}
+            </div>
+            {courses.length > 0 ? (
+              <div className="space-y-4">
+                {courses.map(course => {
+                  const progress = progressMap[course.id] || 0
+                  const lastLesson = lastAccessed[course.id]
+                  return (
+                    <div key={course.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition group relative overflow-hidden">
+                      <div className="absolute bottom-0 left-0 h-1 bg-gray-100 w-full">
+                         <div className={`h-full transition-all duration-1000 ${progress === 100 ? 'bg-green-500' : 'bg-brand-purple'}`} style={{ width: `${progress}%` }}></div>
                       </div>
-                      <div className="flex-1 min-w-0 py-1">
-                        <div className="flex justify-between items-start">
-                           <h3 className="font-bold text-brand-dark text-lg truncate pr-2">{course.title}</h3>
-                           <Link href={`/corsi/${course.id}`} className="bg-brand-purple text-white p-2 rounded-full shadow-md hover:scale-110 transition transform"><PlayCircle size={20} fill="white" className="text-brand-purple" /></Link>
+                      <div className="flex items-start gap-5 relative z-10">
+                        <div className="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 relative shadow-inner">
+                           <img src={course.image_url || 'https://placehold.co/150'} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">{course.description.replace(/\[\[.*?\]\]/g, '')}</p>
-                        <div className="mt-4">
-                           <div className="flex justify-between text-xs font-bold mb-1"><span className={progress === 100 ? "text-green-600" : "text-gray-400"}>{progress === 100 ? "Completed! 🏆" : `${progress}% Complete`}</span></div>
-                           <div className="w-full bg-gray-100 rounded-full h-2"><div className={`h-2 rounded-full transition-all duration-1000 ${progress === 100 ? 'bg-green-500' : 'bg-brand-purple'}`} style={{ width: `${progress}%` }}></div></div>
+                        <div className="flex-1 min-w-0 py-1 flex flex-col justify-between h-24">
+                          <div>
+                             <h3 className="font-bold text-brand-dark text-lg truncate">{course.title}</h3>
+                             <p className="text-xs text-gray-500 mt-1">{lastLesson ? `Resume: ${lastLesson}` : 'Start your journey'}</p>
+                          </div>
+                          <div className="flex items-end justify-between">
+                             <span className={`text-xs font-bold ${progress === 100 ? "text-green-600" : "text-gray-400"}`}>
+                                {progress === 100 ? "Completed! 🏆" : `${progress}% Complete`}
+                             </span>
+                             <Link href={`/corsi/${course.id}`} className="bg-brand-dark text-white pl-3 pr-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-brand-purple transition flex items-center gap-2 transform hover:-translate-y-0.5">
+                                <PlayCircle size={16} /> {progress === 0 ? "Start" : "Resume"}
+                             </Link>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-gray-300">
-              <p className="text-gray-500 mb-4">{t('dash_no_courses')}</p>
-              <Link href="/corsi" className="inline-block bg-brand-purple text-white px-6 py-2 rounded-full font-bold text-sm hover:shadow-lg transition">{t('dash_start_now')}</Link>
-            </div>
-          )}
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl p-10 text-center border-2 border-dashed border-gray-200">
+                <BookOpen size={32} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 mb-4 font-medium">{t('dash_no_courses')}</p>
+                <Link href="/corsi" className="inline-block bg-brand-purple text-white px-6 py-2.5 rounded-full font-bold text-sm hover:shadow-lg transition">
+                  {t('dash_start_now')}
+                </Link>
+              </div>
+            )}
+          </section>
+
+          <section>
+             <h2 className="text-xl font-bold text-brand-dark mb-4">{t('dash_files')}</h2>
+             <div className="bg-white p-6 rounded-2xl border border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                   <div className="bg-blue-50 p-3 rounded-xl text-brand-blue"><Download size={24}/></div>
+                   <div>
+                      <p className="font-bold text-gray-800">{ebooks.length} Resources</p>
+                      <p className="text-xs text-gray-500">Ebooks & Workbooks available</p>
+                   </div>
+                </div>
+                <Link href="/downloads" className="text-sm font-bold text-brand-purple hover:underline">View All</Link>
+             </div>
+          </section>
         </div>
 
+        {/* Right Column */}
         <div className="space-y-8">
-           <div className="bg-gradient-to-br from-brand-dark to-gray-900 rounded-2xl p-6 text-white relative overflow-hidden">
-              <div className="relative z-10">
-                 <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-white/20 p-2 rounded-lg"><Award size={20}/></div>
-                    <h3 className="font-bold">{t('dash_league')}</h3>
+           
+           {/* Referral Card */}
+           <ReferralCard />
+
+           {/* My Calendar */}
+           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Calendar size={20} className="text-brand-purple"/> My Calendar</h3>
+              {upcomingEvents.length > 0 ? (
+                 <div className="space-y-4">
+                    {upcomingEvents.map(evt => (
+                       <div key={evt.id} className="flex gap-3 items-start border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                          <div className="bg-gray-100 rounded-lg p-2 text-center min-w-[50px]">
+                             <span className="block text-[10px] font-bold text-gray-500 uppercase">{new Date(evt.event_date).toLocaleString('default', {month:'short'})}</span>
+                             <span className="block text-xl font-black text-brand-dark leading-none">{new Date(evt.event_date).getDate()}</span>
+                          </div>
+                          <div>
+                             <p className="text-sm font-bold text-gray-800 line-clamp-1">{evt.title}</p>
+                             <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Clock size={10}/> {new Date(evt.event_date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p>
+                             <a href="#" className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded mt-2 inline-block font-bold">Zoom Link Ready</a>
+                          </div>
+                       </div>
+                    ))}
                  </div>
-                 <p className="text-gray-300 text-sm mb-4">Silver League. Keep pushing!</p>
-                 <div className="w-full bg-white/10 rounded-full h-2"><div className="bg-yellow-400 h-2 rounded-full" style={{width: '60%'}}></div></div>
-              </div>
-              <div className="absolute -bottom-4 -right-4 text-white/5"><Award size={120}/></div>
+              ) : (
+                 <div className="text-center py-6">
+                    <p className="text-sm text-gray-400 mb-3">{t('dash_no_live')}</p>
+                    <Link href="/lezioni-live" className="text-xs btn btn-plum-gradient px-4 py-2 rounded-lg">Book Class</Link>
+                 </div>
+              )}
            </div>
 
-           <div>
-             <h2 className="text-xl font-bold text-brand-dark mb-4">{t('dash_upcoming')}</h2>
-             {liveLessons.length > 0 ? (
-                <div className="space-y-3">
-                  {liveLessons.slice(0, 2).map(lesson => (
-                    <div key={lesson.id} className="bg-white p-4 rounded-xl border border-gray-100 flex gap-3 items-center">
-                      <div className="bg-orange-50 text-orange-500 p-3 rounded-lg h-fit"><Calendar size={18}/></div>
-                      <div>
-                        <h4 className="font-bold text-sm text-gray-800 line-clamp-1">{lesson.title}</h4>
-                        <a href="https://zoom.us/join" target="_blank" className="text-xs text-brand-blue font-bold hover:underline mt-1 block">{t('dash_join')}</a>
-                      </div>
+           {/* League Card */}
+           <div className="bg-gradient-to-br from-brand-dark to-[#2a3b55] rounded-2xl p-6 text-white relative overflow-hidden shadow-lg">
+              <div className="relative z-10">
+                 <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm"><Award size={20}/></div>
+                        <h3 className="font-bold">{t('dash_league')}</h3>
                     </div>
-                  ))}
-                </div>
-             ) : (
-                <div className="bg-gray-50 rounded-xl p-6 text-center">
-                    <p className="text-sm text-gray-400 italic mb-2">{t('dash_no_live')}</p>
-                    <Link href="/lezioni-live" className="text-xs font-bold text-brand-blue underline">{t('dash_book_new')}</Link>
-                </div>
-             )}
+                    <Link href="/leaderboard" className="text-xs font-bold bg-white/10 px-2 py-1 rounded hover:bg-white/20 transition">View</Link>
+                 </div>
+                 <p className="text-gray-300 text-sm mb-1 font-medium">Level {level} • Silver League</p>
+                 <div className="w-full bg-black/30 rounded-full h-2 mb-4 overflow-hidden border border-white/10">
+                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full" style={{width: '60%'}}></div>
+                 </div>
+              </div>
+              <div className="absolute -bottom-6 -right-6 text-white/5 rotate-12"><Award size={140}/></div>
            </div>
         </div>
       </div>

@@ -7,7 +7,7 @@ export default function Teachers() {
       <div className="text-center mb-16">
         <h2 className="text-3xl md:text-4xl font-bold text-brand-dark mb-4">Who will you learn from?</h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Native teachers who currently live in Korea. They don't teach from a 10-year-old textbook but deliver the living language of today. Their mission is to share their love for their culture with you – without language barriers.
+          Native teachers who currently live in Korea. They don't teach from a 10-year-old textbook but deliver the living language of today. They don't just teach words; they teach you to "think and feel" in Korean. Their mission is to share their love for their culture with you – without language barriers.
         </p>
       </div>
 

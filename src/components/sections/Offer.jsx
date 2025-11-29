@@ -16,7 +16,7 @@ export default function Offer() {
         <p className="text-gray-300 mb-12">{t('offer_subtitle')}</p>
 
         <div className="bg-white text-gray-800 rounded-3xl p-8 md:p-12 shadow-2xl max-w-lg mx-auto relative transform hover:-translate-y-2 transition duration-300">
-          <div className="absolute top-6 right-0 bg-gradient-to-r from-brand-blue to-brand-purple text-white text-xs font-bold px-8 py-2 transform rotate-45 translate-x-8 shadow-md">
+          <div className="absolute top-6 right-0 bg-gradient-to-r from-brand-teal to-brand-purple text-white text-xs font-bold px-8 py-2 transform rotate-45 translate-x-8 shadow-md">
             {t('offer_free')}
           </div>
 
@@ -24,7 +24,8 @@ export default function Offer() {
           
           <div className="flex justify-center items-center gap-4 mb-8">
             <span className="text-gray-400 line-through text-xl">15.000 Ft</span>
-            <span className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-purple">
+            {/* GRADIENT TEXT PRICE */}
+            <span className="text-5xl font-extrabold text-gradient-brand">
               0 Ft
             </span>
           </div>
@@ -43,14 +44,14 @@ export default function Offer() {
               <span>{t('offer_feat_3')}</span>
             </li>
             <li className="flex items-center gap-3">
-              <div className="bg-purple-100 p-1 rounded-full"><Check className="w-4 h-4 text-brand-purple" /></div>
+              <div className="bg-plum-100 p-1 rounded-full"><Check className="w-4 h-4 text-plum-500" /></div>
               <span className="font-bold">{t('offer_feat_4')}</span>
             </li>
           </ul>
 
           <button 
             onClick={() => document.getElementById('registration').scrollIntoView({ behavior: 'smooth' })}
-            className="w-full bg-gradient-to-r from-brand-blue to-brand-purple text-white font-bold py-4 rounded-xl shadow-lg hover:opacity-90 transition"
+            className="btn btn-plum-gradient w-full py-4"
           >
             {t('offer_btn')}
           </button>

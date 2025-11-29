@@ -1,3 +1,0 @@
-(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["chunks/edge-wrapper_4020e69f.js",58810,e=>{"use strict";self._ENTRIES||={};let t=Promise.resolve().then(()=>e.i(18545));t.catch(()=>{}),self._ENTRIES.middleware_middleware=new Proxy(t,{get(e,t){if("then"===t)return(t,h)=>e.then(t,h);let h=(...h)=>e.then(e=>(0,e[t])(...h));return h.then=(h,r)=>e.then(e=>e[t]).then(h,r),h}}),e.s([])}]);
-
-//# sourceMappingURL=edge-wrapper_4020e69f.js.map

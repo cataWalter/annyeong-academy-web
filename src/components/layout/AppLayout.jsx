@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { useLanguage } from '@/context/LanguageContext'
-import { LayoutDashboard, BookOpen, Calendar, LogOut, User, ShieldCheck, ShoppingBag, Settings, Download, Menu, X, Trophy, StickyNote } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Calendar, LogOut, User, ShieldCheck, ShoppingBag, Settings, Download, Menu, X, Trophy, StickyNote, PenTool, MessageSquare, CreditCard } from 'lucide-react'
 import AnnouncementBanner from '../ui/AnnouncementBanner'
 
 export default function AppLayout() {
@@ -19,11 +19,11 @@ export default function AppLayout() {
     router.push('/login')
   }
 
-  const NavItem = ({ to, icon: Icon, label }) => {
-    const isActive = pathname === to
+  const NavItem = ({ href, icon: Icon, label }) => {
+    const isActive = pathname === href
     return (
       <Link 
-        href={to} 
+        href={href} 
         onClick={() => setMobileOpen(false)}
         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
           isActive ? 'bg-brand-purple text-white shadow-md' : 'text-gray-600 hover:bg-purple-50 hover:text-brand-purple'
@@ -61,6 +61,9 @@ export default function AppLayout() {
           <NavItem href="/leaderboard" icon={Trophy} label={t('nav_leaderboard')} />
           <NavItem href="/lezioni-live" icon={Calendar} label={t('nav_live')} />
           <NavItem href="/store" icon={ShoppingBag} label={t('nav_store')} />
+          <NavItem href="/subscription" icon={CreditCard} label="Membership" /> {/* NEW */}
+          <NavItem href="/blog" icon={PenTool} label="Blog" />
+          <NavItem href="/feedback" icon={MessageSquare} label="Feedback" />
           <NavItem href="/downloads" icon={Download} label={t('nav_downloads')} />
           <NavItem href="/profile" icon={Settings} label={t('nav_profile')} />
           
@@ -91,7 +94,7 @@ export default function AppLayout() {
       <div className="flex-1 md:ml-64 pt-16 md:pt-0 flex flex-col min-h-screen">
         <AnnouncementBanner />
         <main className="p-4 md:p-8 max-w-6xl mx-auto w-full flex-1">
-          <Outlet />
+          {/* Outlet is implicit */}
         </main>
       </div>
     </div>

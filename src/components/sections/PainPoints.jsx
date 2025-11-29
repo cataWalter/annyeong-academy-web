@@ -14,12 +14,12 @@ export default function PainPoints() {
       text: "Do you love K-dramas but hate constantly reading subtitles, missing the actors' expressions? Do you want to finally understand the nuances that get lost in translation?"
     },
     {
-      icon: <Music size={40} className="text-brand-blue" />,
+      icon: <Music size={40} className="text-brand-teal" />,
       title: "The Music Lover",
       text: "Is your playlist full of BTS or Stray Kids songs? Do you want to understand what they are singing about, write them a fan letter, or ask them a question they can actually understand?"
     },
     {
-      icon: <Frown size={40} className="text-orange-500" />,
+      icon: <Frown size={40} className="text-plum-500" />,
       title: "The Hesitant Beginner",
       text: "Do you think you have no talent for languages? Did you struggle with languages in school and fear Korean will be the same? With us, that’s no longer an obstacle!"
     }
@@ -28,7 +28,7 @@ export default function PainPoints() {
   return (
     <Section className="bg-white">
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold text-brand-dark">Does this feeling sound familiar?</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-gradient-brand">Does this feeling sound familiar?</h2>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8">
@@ -46,7 +46,7 @@ export default function PainPoints() {
       <div className="text-center mt-12">
         <button 
           onClick={scrollToForm}
-          className="inline-flex items-center gap-2 bg-brand-dark text-white font-bold py-4 px-10 rounded-xl hover:bg-gray-800 transition shadow-lg transform hover:-translate-y-1"
+          className="btn btn-plum-gradient gap-2 px-10 py-4"
         >
           I need this! <ArrowDown size={20} />
         </button>

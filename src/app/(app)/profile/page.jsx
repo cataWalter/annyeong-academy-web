@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useLanguage } from '@/context/LanguageContext'
 import { supabase } from '@/lib/supabase'
-import { User, Save, Loader2, Camera, Lock, FileText, Download } from 'lucide-react'
+import { User, Save, Loader2, Camera, Lock, FileText, Download, Award, MapPin } from 'lucide-react'
 import { generateFilePath } from '@/lib/helpers'
 import { generateInvoice } from '@/utils/invoiceGenerator'
 
@@ -11,87 +11,80 @@ export default function Profile() {
   const { user, refreshProfile } = useAuth()
   const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
-  const [passwordLoading, setPasswordLoading] = useState(false)
   
+  // Profile State
   const [fullName, setFullName] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [billing, setBilling] = useState({ address: '', city: '', zip: '', country: '' })
+  
   const [uploading, setUploading] = useState(false)
+  const [orders, setOrders] = useState([])
+  const [certificates, setCertificates] = useState([])
 
+  // Password State
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [passwordMsg, setPasswordMsg] = useState('')
-
-  const [orders, setOrders] = useState([])
 
   useEffect(() => {
     if (user) {
       getProfile()
       getOrders()
+      getCertificates()
     }
   }, [user])
 
   const getProfile = async () => {
-    try {
-      const { data } = await supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).single()
-      if (data) {
-        setFullName(data.full_name || '')
-        setAvatarUrl(data.avatar_url || '')
-      }
-    } catch (error) { console.error(error) }
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+    if (data) { 
+      setFullName(data.full_name || '')
+      setAvatarUrl(data.avatar_url || '')
+      setBilling(data.billing_address || { address: '', city: '', zip: '', country: '' })
+    }
   }
 
   const getOrders = async () => {
-    try {
-      const { data } = await supabase
-        .from('purchases')
-        .select('id, created_at, products(title, price)')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-      setOrders(data || [])
-    } catch (error) { console.error(error) }
+    const { data } = await supabase.from('purchases').select('id, created_at, products(title, price)').eq('user_id', user.id).order('created_at', { ascending: false })
+    setOrders(data || [])
   }
 
-  const handleAvatarUpload = async (event) => {
-    try {
-      setUploading(true)
-      const file = event.target.files[0]
-      if (!file) return
-      const path = generateFilePath('avatars', file)
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file)
-      if (uploadError) throw uploadError
-      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-      setAvatarUrl(data.publicUrl)
-    } catch (error) { alert('Upload error: ' + error.message) } 
-    finally { setUploading(false) }
+  const getCertificates = async () => {
+    const { data: courses } = await supabase.from('products').select('id, title').eq('type', 'course')
+    const { data: progress } = await supabase.from('lesson_progress').select('course_id').eq('user_id', user.id)
+    const { data: lessons } = await supabase.from('lessons').select('id, course_id')
+    
+    if(!courses || !progress || !lessons) return
+
+    const completed = courses.filter(c => {
+      const courseLessons = lessons.filter(l => l.course_id === c.id)
+      const userProgress = progress.filter(p => p.course_id === c.id)
+      return courseLessons.length > 0 && courseLessons.length === userProgress.length
+    })
+    setCertificates(completed)
   }
 
   const updateProfile = async (e) => {
     e.preventDefault()
-    try {
-      setLoading(true)
-      const updates = { id: user.id, full_name: fullName, avatar_url: avatarUrl, updated_at: new Date() }
-      const { error } = await supabase.from('profiles').upsert(updates)
-      if (error) throw error
-      await refreshProfile() 
-      alert('Profile updated successfully!')
-    } catch (error) { alert(error.message) } 
-    finally { setLoading(false) }
+    setLoading(true)
+    await supabase.from('profiles').upsert({ 
+      id: user.id, 
+      full_name: fullName, 
+      avatar_url: avatarUrl, 
+      billing_address: billing,
+      updated_at: new Date() 
+    })
+    await refreshProfile()
+    setLoading(false)
+    alert('Profile saved successfully!')
   }
 
-  const handlePasswordUpdate = async (e) => {
-    e.preventDefault()
-    setPasswordMsg('')
-    if (newPassword.length < 6) return setPasswordMsg('Password must be at least 6 characters.')
-    if (newPassword !== confirmPassword) return setPasswordMsg('Passwords do not match.')
-    setPasswordLoading(true)
-    const { error } = await supabase.auth.updateUser({ password: newPassword })
-    if (error) setPasswordMsg('Error: ' + error.message)
-    else {
-      setPasswordMsg('Success: Password updated successfully!')
-      setNewPassword('')
-      setConfirmPassword('')
-    }
-    setPasswordLoading(false)
+  const handleAvatarUpload = async (event) => {
+    setUploading(true)
+    const file = event.target.files[0]
+    const path = generateFilePath('avatars', file)
+    await supabase.storage.from('avatars').upload(path, file)
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    setAvatarUrl(data.publicUrl)
+    setUploading(false)
   }
 
   return (
@@ -100,6 +93,7 @@ export default function Profile() {
       <p className="text-gray-500 mb-8">{t('prof_desc')}</p>
 
       <div className="grid gap-8">
+        {/* Main Profile Card */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-blue to-brand-purple"></div>
           <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
@@ -119,11 +113,26 @@ export default function Profile() {
               <p className="text-gray-400">{user?.email}</p>
             </div>
           </div>
+          
           <form onSubmit={updateProfile} className="space-y-6 border-t border-gray-100 pt-6">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">{t('auth_fullname')}</label>
-              <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none bg-gray-50 focus:bg-white transition" />
+              <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-field" />
             </div>
+
+            {/* BILLING SECTION */}
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+              <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2"><MapPin size={18}/> Billing Address</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <input placeholder="Address Line" className="input-field bg-white" value={billing.address} onChange={e => setBilling({...billing, address: e.target.value})} />
+                </div>
+                <input placeholder="City" className="input-field bg-white" value={billing.city} onChange={e => setBilling({...billing, city: e.target.value})} />
+                <input placeholder="ZIP Code" className="input-field bg-white" value={billing.zip} onChange={e => setBilling({...billing, zip: e.target.value})} />
+                <input placeholder="Country" className="input-field bg-white md:col-span-2" value={billing.country} onChange={e => setBilling({...billing, country: e.target.value})} />
+              </div>
+            </div>
+
             <button disabled={loading} type="submit" className="w-full md:w-auto flex items-center justify-center gap-2 bg-brand-purple text-white px-8 py-3 rounded-xl font-bold hover:opacity-90 transition shadow-lg">
               {loading ? <Loader2 className="animate-spin" size={20} /> : <><Save size={20} /> {t('prof_save')}</>}
             </button>
@@ -131,27 +140,27 @@ export default function Profile() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
+          {/* Certificates */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 h-fit">
             <div className="flex items-center gap-3 mb-6">
-              <div className="bg-gray-100 p-2 rounded-lg text-gray-600"><Lock size={20} /></div>
-              <h3 className="text-lg font-bold text-brand-dark">{t('prof_security')}</h3>
+              <div className="bg-yellow-50 p-2 rounded-lg text-yellow-600"><Award size={20} /></div>
+              <h3 className="text-lg font-bold text-brand-dark">My Certificates</h3>
             </div>
-            <form onSubmit={handlePasswordUpdate} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t('prof_new_pass')}</label>
-                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none" placeholder="••••••••" />
+            {certificates.length > 0 ? (
+              <div className="space-y-4">
+                {certificates.map(cert => (
+                  <div key={cert.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                    <p className="font-bold text-gray-800 text-sm">{cert.title}</p>
+                    <a href={`/corsi/${cert.id}`} className="text-brand-purple hover:underline text-xs font-bold">Download</a>
+                  </div>
+                ))}
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">{t('prof_confirm_pass')}</label>
-                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-purple outline-none" placeholder="••••••••" />
-              </div>
-              {passwordMsg && <div className={`p-3 rounded-lg text-sm font-bold ${passwordMsg.startsWith('Success') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>{passwordMsg}</div>}
-              <button disabled={passwordLoading || !newPassword} type="submit" className="w-full bg-brand-dark text-white px-6 py-3 rounded-xl font-bold hover:opacity-90 transition shadow-lg disabled:opacity-50">
-                {passwordLoading ? <Loader2 className="animate-spin mx-auto" size={20} /> : t('prof_update')}
-              </button>
-            </form>
+            ) : (
+              <p className="text-gray-400 italic text-sm">No certificates yet. Complete a course!</p>
+            )}
           </div>
 
+          {/* Order History */}
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 h-fit">
             <div className="flex items-center gap-3 mb-6">
               <div className="bg-blue-50 p-2 rounded-lg text-brand-blue"><FileText size={20} /></div>
@@ -165,7 +174,7 @@ export default function Profile() {
                       <p className="font-bold text-gray-800 text-sm">{order.products?.title}</p>
                       <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleDateString()} • {order.products?.price}</p>
                     </div>
-                    <button onClick={() => generateInvoice(order, {full_name: fullName})} className="text-gray-400 hover:text-brand-purple transition" title="Download Invoice">
+                    <button onClick={() => generateInvoice(order, {full_name: fullName, billing_address: billing})} className="text-gray-400 hover:text-brand-purple transition" title="Download Invoice">
                       <Download size={18} />
                     </button>
                   </div>
@@ -177,6 +186,10 @@ export default function Profile() {
           </div>
         </div>
       </div>
+      <style>{`
+        .input-field { width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; outline: none; font-size: 0.9rem; transition: all 0.2s; }
+        .input-field:focus { border-color: #6a11cb; ring: 2px solid #6a11cb33; }
+      `}</style>
     </div>
   )
 }

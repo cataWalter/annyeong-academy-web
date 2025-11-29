@@ -6,7 +6,6 @@ export default function StickyBar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Show only after scrolling past header (100px)
       if (window.scrollY > 100) {
         setIsVisible(true);
       } else {
@@ -31,7 +30,7 @@ export default function StickyBar() {
       </div>
       <button 
         onClick={scrollToForm}
-        className="bg-brand-purple text-white px-6 py-2 rounded-lg font-bold shadow-md"
+        className="btn btn-plum-gradient px-6 py-2 text-sm"
       >
         Sign Up
       </button>

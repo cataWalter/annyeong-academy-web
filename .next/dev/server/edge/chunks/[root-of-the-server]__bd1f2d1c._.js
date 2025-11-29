@@ -48,8 +48,35 @@ async function middleware(request) {
             }
         }
     });
+    // 1. Check Maintenance Mode
+    // Note: Fetching from DB in middleware can add latency. For production, consider Edge Config or KV.
+    const { data: maintenance } = await supabase.from('system_settings').select('value').eq('key', 'maintenance_mode').single();
+    const path = request.nextUrl.pathname;
+    // 2. Get User
     const { data: { user } } = await supabase.auth.getUser();
-    // Protected Routes Logic
+    let role = 'student';
+    if (user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        role = profile?.role || 'student';
+    }
+    // 3. Enforce Maintenance Mode (Allow only Admin or Login/Auth pages)
+    if (maintenance?.value?.enabled) {
+        if (role !== 'admin' && !path.startsWith('/login') && !path.startsWith('/admin') && !path.startsWith('/_next')) {
+            return new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"](`<html><body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;text-align:center;background:#F8F9FC;">
+           <div>
+             <h1 style="color:#192335;margin-bottom:10px;">Maintenance Mode</h1>
+             <p style="color:#666;">${maintenance.value.message}</p>
+             <p style="font-size:12px;margin-top:20px;"><a href="/login" style="color:#6a11cb">Admin Login</a></p>
+           </div>
+         </body></html>`, {
+                status: 503,
+                headers: {
+                    'content-type': 'text/html'
+                }
+            });
+        }
+    }
+    // 4. Protected Routes
     const protectedPrefixes = [
         '/dashboard',
         '/profile',
@@ -59,14 +86,15 @@ async function middleware(request) {
         '/lezioni-live',
         '/admin'
     ];
-    const path = request.nextUrl.pathname;
     const isProtected = protectedPrefixes.some((prefix)=>path.startsWith(prefix));
-    // 1. Unauthenticated -> Login
     if (isProtected && !user) {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(new URL('/login', request.url));
     }
-    // 2. Authenticated -> Dashboard (if visiting auth pages)
     if (user && (path === '/login' || path === '/register')) {
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(new URL('/dashboard', request.url));
+    }
+    // 5. Admin Route Guard
+    if (path.startsWith('/admin') && role !== 'admin') {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$esm$2f$server$2f$web$2f$exports$2f$index$2e$js__$5b$middleware$2d$edge$5d$__$28$ecmascript$29$__["NextResponse"].redirect(new URL('/dashboard', request.url));
     }
     return response;

@@ -8,13 +8,18 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Poppins', 'sans-serif'],
       },
       colors: {
         brand: {
-          purple: '#6a11cb',
-          blue: '#2575fc',
+          teal: '#4A88B0',   // Seoul Turquoise
+          purple: '#5E3891', // Gangnam Purple
           dark: '#192335',
+        },
+        plum: {
+          100: '#E6CEDB',
+          500: '#9B3E83',
+          700: '#6A2C5D',
         }
       }
     },

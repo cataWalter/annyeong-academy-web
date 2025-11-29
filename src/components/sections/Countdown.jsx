@@ -6,7 +6,6 @@ export default function Countdown() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    // Target: Dec 14, 11:00 AM (Current Year)
     const currentYear = new Date().getFullYear();
     const targetDate = new Date(`December 14, ${currentYear} 11:00:00`).getTime();
 
@@ -34,10 +33,10 @@ export default function Countdown() {
   };
 
   return (
-    <section className="bg-brand-dark text-white py-8 px-4 text-center">
+    <section className="bg-brand-dark text-white py-8 px-4 text-center border-t border-white/10">
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-center gap-6">
         <div>
-          <p className="text-sm font-bold uppercase tracking-widest text-brand-blue mb-1">Don't miss out!</p>
+          <p className="text-sm font-bold uppercase tracking-widest text-brand-teal mb-1">Don't miss out!</p>
           <p className="text-xl font-medium">The trial class starts in:</p>
         </div>
         
@@ -57,7 +56,7 @@ export default function Countdown() {
 
         <button 
           onClick={scrollToForm}
-          className="bg-brand-purple hover:bg-purple-600 text-white font-bold py-3 px-6 rounded-full transition shadow-lg hover:shadow-purple-500/25 whitespace-nowrap"
+          className="btn btn-plum-gradient"
         >
           Reserve my spot now!
         </button>

@@ -40,14 +40,14 @@ export default function WebinarForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 rounded-3xl shadow-2xl max-w-md mx-auto border-t-8 border-brand-purple relative z-20">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold text-brand-dark">Enter the world of K-Culture!</h3>
-        <p className="text-sm text-gray-500 mt-2">Without obstacles. Spots are limited!</p>
+        <h3 className="text-2xl font-bold text-brand-dark">Enter the world of K-Culture – without obstacles!</h3>
+        <p className="text-sm text-gray-500 mt-2">This free webinar is the first step to listening to your next series with different ears. Spots are limited!</p>
       </div>
       
       <div>
-        <label className="block text-sm font-bold text-gray-700 mb-1">Name</label>
+        <label className="block text-sm font-bold text-gray-700 mb-1 text-left">Name</label>
         <input 
           required
           type="text"
@@ -58,7 +58,7 @@ export default function WebinarForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-bold text-gray-700 mb-1">Email Address</label>
+        <label className="block text-sm font-bold text-gray-700 mb-1 text-left">Email Address</label>
         <input 
           required
           type="email"
@@ -68,7 +68,7 @@ export default function WebinarForm() {
         />
       </div>
 
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3 text-left">
         <input 
           required
           type="checkbox" 
@@ -85,7 +85,7 @@ export default function WebinarForm() {
       <button 
         disabled={loading}
         type="submit" 
-        className="w-full bg-brand-purple text-white font-bold py-4 rounded-xl hover:bg-brand-dark disabled:opacity-50 flex justify-center items-center shadow-lg hover:shadow-xl transition transform active:scale-95"
+        className="btn btn-plum-gradient w-full py-4 disabled:opacity-50"
       >
         {loading ? <Loader2 className="animate-spin" /> : "Send me my ZOOM link!"}
       </button>
