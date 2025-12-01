@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { 
   LayoutList, Loader2, Users, GraduationCap, DollarSign, Database, Tag,
-  Megaphone, PenTool, Brain, Calendar, ShoppingBag, LayoutTemplate, BarChart2, UserCheck, HelpCircle, MessageSquare, Gift, Settings, FileText
+  Megaphone, PenTool, Brain, Calendar, ShoppingBag, LayoutTemplate, BarChart2, UserCheck, HelpCircle, MessageSquare, Gift, Settings, FileText, MessageCircle
 } from 'lucide-react'
 
 import CourseManager from '@/components/admin/CourseManager'
@@ -25,7 +25,8 @@ import OrderManager from '@/components/admin/OrderManager'
 import HomeworkManager from '@/components/admin/HomeworkManager'
 import FeedbackViewer from '@/components/admin/FeedbackViewer'
 import SeedManager from '@/components/admin/SeedManager'
-import CouponManager from '@/components/admin/CouponManager' // NEW
+import CouponManager from '@/components/admin/CouponManager'
+import CommentManager from '@/components/admin/CommentManager'
 
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth()
@@ -36,16 +37,15 @@ export default function AdminDashboard() {
   const tabs = [
     { id: 'analytics', icon: BarChart2, label: 'Overview' },
     { id: 'orders', icon: DollarSign, label: 'Sales' },
-    { id: 'coupons', icon: Tag, label: 'Coupons' }, // NEW
-    { id: 'grading', icon: FileText, label: 'Homework' },
-    { id: 'lessons', icon: LayoutList, label: 'Courses' },
-    { id: 'db', icon: Database, label: 'DB Tools' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'coupons', icon: Tag, label: 'Coupons' },
     { id: 'students', icon: GraduationCap, label: 'Students' },
+    { id: 'lessons', icon: LayoutList, label: 'Courses' },
+    { id: 'grading', icon: FileText, label: 'Homework' },
     { id: 'events', icon: Calendar, label: 'Events' },
     { id: 'tutors', icon: UserCheck, label: 'Tutors' },
-    { id: 'blog', icon: PenTool, label: 'Blog' },
     { id: 'shop', icon: ShoppingBag, label: 'Shop' },
+    { id: 'blog', icon: PenTool, label: 'Blog' },
+    { id: 'comments', icon: MessageCircle, label: 'Comments' }, // NEW
     { id: 'reviews', icon: MessageSquare, label: 'Reviews' },
     { id: 'feedback', icon: MessageSquare, label: 'Feedback' },
     { id: 'giveaway', icon: Gift, label: 'Giveaway' },
@@ -54,6 +54,8 @@ export default function AdminDashboard() {
     { id: 'faq', icon: HelpCircle, label: 'FAQ' },
     { id: 'leads', icon: Users, label: 'CRM' },
     { id: 'announce', icon: Megaphone, label: 'Alerts' },
+    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'db', icon: Database, label: 'DB Tools' },
   ]
 
   return (
@@ -77,6 +79,7 @@ export default function AdminDashboard() {
         {activeTab === 'feedback' && <FeedbackViewer />}
         {activeTab === 'lessons' && <CourseManager />}
         {activeTab === 'reviews' && <ReviewManager />}
+        {activeTab === 'comments' && <CommentManager />}
         {activeTab === 'tutors' && <TutorManager />}
         {activeTab === 'events' && <EventManager />}
         {activeTab === 'cms' && <CMSManager />}

@@ -1,14 +1,19 @@
 "use client";
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Loader2, Trash2, Edit, Calendar, Video, Users, X, Download } from 'lucide-react'
+import { Loader2, Trash2, Edit, Calendar, Video, Users, X, Download, PlusCircle } from 'lucide-react'
 import { downloadCSV } from '@/utils/csvExport'
+import { useEdgeFunction } from '@/hooks/useEdgeFunction'
 
 export default function EventManager() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   
+  // Hooks
+  const { invoke } = useEdgeFunction()
+  const [genZoomLoading, setGenZoomLoading] = useState(false)
+
   // Roster State
   const [viewingRoster, setViewingRoster] = useState(null)
   const [rosterData, setRosterData] = useState([])
@@ -29,12 +34,10 @@ export default function EventManager() {
 
   const fetchRoster = async (eventId) => {
     setRosterLoading(true)
-    // Join purchases with profiles to get names
     const { data } = await supabase.from('purchases')
       .select('created_at, profiles(full_name, email)')
       .eq('product_id', eventId)
       .eq('status', 'completed')
-    
     setRosterData(data || [])
     setRosterLoading(false)
   }
@@ -42,6 +45,23 @@ export default function EventManager() {
   const handleViewRoster = (evt) => {
     setViewingRoster(evt)
     fetchRoster(evt.id)
+  }
+
+  const handleGenerateZoom = async () => {
+    if (!formData.title || !formData.event_date) return alert("Please enter title and date first")
+    setGenZoomLoading(true)
+    
+    // Call Edge Function
+    const { data, fallback } = await invoke('create-zoom', {
+      topic: formData.title,
+      start_time: formData.event_date
+    })
+
+    const link = fallback ? `https://zoom.us/j/${Math.floor(Math.random()*1000000000)}?pwd=mock` : data.join_url
+    
+    // Append to description
+    setFormData(prev => ({ ...prev, description: prev.description + `\n\n[[ZOOM::${link}]]` }))
+    setGenZoomLoading(false)
   }
 
   const handleSubmit = async (e) => {
@@ -78,7 +98,6 @@ export default function EventManager() {
   return (
     <div className="grid lg:grid-cols-3 gap-8 relative">
       
-      {/* Roster Modal */}
       {viewingRoster && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in flex flex-col max-h-[80vh]">
@@ -126,7 +145,13 @@ export default function EventManager() {
           </div>
           <input required type="datetime-local" className="input-field" value={formData.event_date} onChange={e => setFormData({...formData, event_date: e.target.value})} />
           <input placeholder="Cover Image URL" className="input-field" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
-          <textarea required placeholder="Description (include [[ZOOM::link]] tag)" className="input-field h-32" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+          
+          <div className="relative">
+             <textarea required placeholder="Description (include [[ZOOM::link]] tag)" className="input-field h-32" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+             <button type="button" onClick={handleGenerateZoom} disabled={genZoomLoading} className="absolute bottom-2 right-2 text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 flex items-center gap-1 hover:bg-blue-100">
+               {genZoomLoading ? <Loader2 size={12} className="animate-spin"/> : <Video size={12}/>} Gen Zoom Link
+             </button>
+          </div>
           
           <div className="flex gap-2">
             <button type="submit" disabled={loading} className="btn btn-plum-gradient w-full py-2">{loading ? 'Saving...' : 'Save Event'}</button>

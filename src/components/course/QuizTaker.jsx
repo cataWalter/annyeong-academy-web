@@ -1,10 +1,12 @@
 "use client";
 import { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, RefreshCw, Trophy, Mic, Type, ArrowRight, Save, Loader2, AlertTriangle } from 'lucide-react'
+import { CheckCircle, XCircle, RefreshCw, Trophy, Mic, Type, ArrowRight, Save, Loader2, AlertTriangle, Square } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { useLanguage } from '@/context/LanguageContext'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { useAudioRecorder } from '@/hooks/useAudioRecorder'
+import AudioVisualizer from './AudioVisualizer'
 
 export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) {
   const { t } = useLanguage()
@@ -14,13 +16,16 @@ export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) 
   const [showScore, setShowScore] = useState(false)
   const [saving, setSaving] = useState(false)
   const [attempts, setAttempts] = useState(0)
-  const [maxAttempts] = useState(3) // Configurable limit
+  const [maxAttempts] = useState(3)
   
   const [selectedOption, setSelectedOption] = useState(null)
   const [textAnswer, setTextAnswer] = useState('')
-  const [isRecording, setIsRecording] = useState(false)
   const [isAnswered, setIsAnswered] = useState(false)
   const [feedback, setFeedback] = useState(null)
+  
+  // Audio Hooks
+  const { isRecording, audioBlob, startRecording, stopRecording } = useAudioRecorder()
+  const [processingAudio, setProcessingAudio] = useState(false)
 
   useEffect(() => {
     if (user && lessonId) checkAttempts()
@@ -74,16 +79,22 @@ export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) 
     }
   }
 
-  const handleVoiceRecording = () => {
-    setIsRecording(!isRecording)
-    if (!isRecording) {
+  const toggleRecording = async () => {
+    if (isRecording) {
+      stopRecording()
+      // Simulate Processing AI Analysis
+      setProcessingAudio(true)
       setTimeout(() => {
-        setIsRecording(false)
+        setProcessingAudio(false)
         setIsAnswered(true)
-        setScore(score + 1) // Mock passing for voice
+        // In a real app, send audioBlob to backend -> Whisper API -> Text -> Grade
+        // Here we simulate a "Good" result
+        setScore(score + 1)
         setFeedback('correct')
         confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } })
-      }, 2000)
+      }, 1500)
+    } else {
+      await startRecording()
     }
   }
 
@@ -114,7 +125,7 @@ export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) 
           total_questions: quizData.length,
           passed: passed
         }])
-        await checkAttempts() // Update count
+        await checkAttempts()
       } catch (err) {
         console.error("Failed to save quiz result", err)
       } finally {
@@ -211,10 +222,15 @@ export default function QuizTaker({ quizData, onComplete, lessonId, courseId }) 
 
         {questionType === 'voice' && (
           <div className="flex flex-col items-center justify-center py-8">
-            <button disabled={isAnswered} onClick={handleVoiceRecording} className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 animate-pulse scale-110' : (isAnswered ? 'bg-green-500' : 'bg-brand-purple hover:scale-105')}`}>
-              <Mic size={32} className="text-white" />
+            {isRecording && <div className="mb-4"><AudioVisualizer isRecording={isRecording} /></div>}
+            
+            <button disabled={isAnswered || processingAudio} onClick={toggleRecording} className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-lg ${isRecording ? 'bg-red-500 animate-pulse scale-110' : (isAnswered ? 'bg-green-500' : 'bg-brand-purple hover:scale-105')}`}>
+              {processingAudio ? <Loader2 className="animate-spin text-white"/> : (isRecording ? <Square size={24} className="text-white fill-current"/> : <Mic size={32} className="text-white" />)}
             </button>
-            <p className="mt-4 text-gray-500 font-medium">{isRecording ? "Recording..." : (isAnswered ? "Great pronunciation!" : "Tap to Speak")}</p>
+            
+            <p className="mt-4 text-gray-500 font-medium">
+                {processingAudio ? "Analyzing pronunciation..." : (isRecording ? "Listening..." : (isAnswered ? "Great pronunciation!" : "Tap to Speak"))}
+            </p>
           </div>
         )}
       </div>

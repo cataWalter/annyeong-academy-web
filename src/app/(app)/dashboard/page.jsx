@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useGamification } from '@/hooks/useGamification'
@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext'
 import Link from 'next/link'
 import { BookOpen, Loader2, PlayCircle, Calendar, Download, ArrowRight, Award, Zap, Flame, Clock, StickyNote, ExternalLink } from 'lucide-react'
 import ReferralCard from '@/components/dashboard/ReferralCard'
+import LevelUpModal from '@/components/ui/LevelUpModal'
 import { extractTag } from '@/lib/helpers'
 
 export default function Dashboard() {
@@ -20,8 +21,22 @@ export default function Dashboard() {
   const [ebooks, setEbooks] = useState([])
   const [progressMap, setProgressMap] = useState({})
   const [lastAccessed, setLastAccessed] = useState({})
+  
+  // Level Up State
+  const [showLevelUp, setShowLevelUp] = useState(false)
+  const prevLevelRef = useRef(1)
 
-  useEffect(() => { if (user) fetchData() }, [user])
+  useEffect(() => { 
+    if (user) fetchData() 
+  }, [user])
+
+  // Track Level Changes
+  useEffect(() => {
+    if (!gameLoading && level > 1 && level > prevLevelRef.current) {
+        setShowLevelUp(true)
+    }
+    prevLevelRef.current = level
+  }, [level, gameLoading])
 
   const fetchData = async () => {
     try {
@@ -72,6 +87,8 @@ export default function Dashboard() {
 
   return (
     <div className="pb-10 animate-fade-in">
+      {showLevelUp && <LevelUpModal level={level} onClose={() => setShowLevelUp(false)} />}
+      
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-brand-dark mb-1">{t('dash_hello')}, {displayName}! 👋</h1>

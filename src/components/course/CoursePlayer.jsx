@@ -1,7 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from 'react'
 import { PlayCircle, CheckCircle, Circle, Download, HelpCircle, AlertTriangle, ExternalLink, ChevronLeft, ChevronRight, FileDown, Lock, Music, Clock, Menu, X, Gamepad2, Layers, ChevronDown, ChevronUp } from 'lucide-react'
-import { getEmbedUrl } from '@/lib/video'
 import { cleanDescription } from '@/lib/helpers'
 import confetti from 'canvas-confetti'
 import { useGamification } from '@/hooks/useGamification'
@@ -10,6 +9,7 @@ import Certificate from './Certificate'
 import LessonNotes from './LessonNotes'
 import QuizTaker from './QuizTaker'
 import CustomAudioPlayer from './CustomAudioPlayer'
+import InteractiveVideoPlayer from './InteractiveVideoPlayer'
 import VocabularyDrill from './VocabularyDrill'
 import MatchingGame from './MatchingGame'
 import FlashcardViewer from './FlashcardViewer'
@@ -23,7 +23,7 @@ import jsPDF from 'jspdf'
 export default function CoursePlayer({ course, lessons, user }) {
   const [activeLessonIndex, setActiveLessonIndex] = useState(0)
   const [completedLessonIds, setCompletedLessonIds] = useState([])
-  const [passedQuizLessonIds, setPassedQuizLessonIds] = useState([]) // New State for strict locking
+  const [passedQuizLessonIds, setPassedQuizLessonIds] = useState([]) 
   const [viewMode, setViewMode] = useState('content')
   const [showReport, setShowReport] = useState(false)
   const [showFlashcards, setShowFlashcards] = useState(false)
@@ -46,10 +46,7 @@ export default function CoursePlayer({ course, lessons, user }) {
 
   useEffect(() => {
     const initPlayer = async () => {
-      // 1. Fetch Progress
       const { data: progress } = await supabase.from('lesson_progress').select('lesson_id, last_accessed').eq('user_id', user.id).eq('course_id', course.id)
-      
-      // 2. Fetch Quiz Results (for strict locking)
       const { data: quizResults } = await supabase.from('quiz_results').select('lesson_id, passed').eq('user_id', user.id).eq('course_id', course.id).eq('passed', true)
       
       if(quizResults) setPassedQuizLessonIds(quizResults.map(q => q.lesson_id))
@@ -58,7 +55,6 @@ export default function CoursePlayer({ course, lessons, user }) {
         const completed = progress.map(p => p.lesson_id)
         setCompletedLessonIds(completed)
         
-        // Find most recently accessed
         const lastAccessedEntry = progress.sort((a,b) => new Date(b.last_accessed) - new Date(a.last_accessed))[0]
         if (lastAccessedEntry) {
             const index = lessons.findIndex(l => l.id === lastAccessedEntry.lesson_id)
@@ -115,7 +111,6 @@ export default function CoursePlayer({ course, lessons, user }) {
   const isDateLocked = activeLesson?.release_date && new Date(activeLesson.release_date) > new Date()
   const isLocked = isPrereqLocked || isDateLocked
 
-  // STRICT COMPLETION LOGIC
   const hasQuiz = activeLesson?.quiz_data && activeLesson.quiz_data.length > 0
   const isQuizPassed = passedQuizLessonIds.includes(activeLesson?.id)
   const canMarkComplete = !hasQuiz || isQuizPassed
@@ -124,10 +119,10 @@ export default function CoursePlayer({ course, lessons, user }) {
     if (!activeLesson) return
     const lessonId = activeLesson.id
     
-    // Block if quiz exists and not passed
     if (!canMarkComplete && !isLessonCompleted) {
       alert("You must pass the quiz before completing this lesson.")
-      setViewMode('quiz')
+      const isInteractive = activeLesson.quiz_data.some(q => q.timestamp)
+      if(!isInteractive) setViewMode('quiz')
       return
     }
 
@@ -147,8 +142,6 @@ export default function CoursePlayer({ course, lessons, user }) {
     if(!passedQuizLessonIds.includes(activeLesson.id)) {
       setPassedQuizLessonIds(prev => [...prev, activeLesson.id])
     }
-    // Auto complete lesson on quiz pass
-    if(!isLessonCompleted) toggleCompletion()
   }
 
   const downloadCertificate = async () => {
@@ -165,6 +158,9 @@ export default function CoursePlayer({ course, lessons, user }) {
   }
 
   const toggleModule = (modName) => setOpenModules(prev => ({ ...prev, [modName]: !prev[modName] }))
+
+  const interactiveQuizData = activeLesson?.quiz_data?.filter(q => q.timestamp) || []
+  const examQuizData = activeLesson?.quiz_data?.filter(q => !q.timestamp) || []
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 min-h-screen relative">
@@ -194,19 +190,24 @@ export default function CoursePlayer({ course, lessons, user }) {
           <>
             <div className="flex gap-2 mb-4 bg-white p-1 rounded-xl shadow-sm border border-gray-100 w-fit flex-wrap">
               <button onClick={() => setViewMode('content')} className={`px-4 py-2 rounded-lg font-bold text-sm transition ${viewMode === 'content' ? 'bg-brand-purple text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}>Content</button>
-              {activeLesson?.quiz_data?.length > 0 && <button onClick={() => setViewMode('quiz')} className={`px-4 py-2 rounded-lg font-bold text-sm transition flex items-center gap-2 ${viewMode === 'quiz' ? 'bg-brand-purple text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><HelpCircle size={14}/> Quiz</button>}
+              {examQuizData.length > 0 && <button onClick={() => setViewMode('quiz')} className={`px-4 py-2 rounded-lg font-bold text-sm transition flex items-center gap-2 ${viewMode === 'quiz' ? 'bg-brand-purple text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><HelpCircle size={14}/> Quiz</button>}
               {gamePairs.length >= 2 && <button onClick={() => setViewMode('game')} className={`px-4 py-2 rounded-lg font-bold text-sm transition flex items-center gap-2 ${viewMode === 'game' ? 'bg-brand-purple text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}><Gamepad2 size={14}/> Game</button>}
             </div>
 
-            {viewMode === 'quiz' && <QuizTaker quizData={activeLesson.quiz_data} onComplete={handleQuizPass} lessonId={activeLesson.id} courseId={course.id} />}
+            {viewMode === 'quiz' && <QuizTaker quizData={examQuizData} onComplete={handleQuizPass} lessonId={activeLesson.id} courseId={course.id} />}
             {viewMode === 'game' && <MatchingGame pairs={gamePairs} onComplete={() => addXP(20)} />}
 
             {viewMode === 'content' && (
               <>
-                <div className="rounded-2xl overflow-hidden shadow-lg flex-shrink-0 mb-6 bg-black">
+                <div className="mb-6">
                   {activeLesson?.type === 'audio' ? 
                     <CustomAudioPlayer src={activeLesson.video_url} title={activeLesson.title} /> : 
-                    <div className="aspect-video"><iframe src={getEmbedUrl(activeLesson?.video_url)} className="w-full h-full" allowFullScreen title={activeLesson?.title} /></div>
+                    <InteractiveVideoPlayer 
+                      src={activeLesson.video_url} 
+                      title={activeLesson.title} 
+                      quizData={interactiveQuizData}
+                      onQuizPass={handleQuizPass}
+                    />
                   }
                 </div>
                 

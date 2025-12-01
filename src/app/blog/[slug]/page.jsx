@@ -1,13 +1,24 @@
+import { supabase } from '@/lib/supabase' 
+import Navbar from '@/components/sections/Navbar'
+import Footer from '@/components/sections/Footer'
+import { ArrowLeft, Calendar, MessageCircle, Send, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import ShareButton from '@/components/ui/ShareButton'
+
+// Dynamic Metadata
+export async function generateMetadata({ params }) {
+  const { slug } = params
+  return {
+    title: `Blog Post | Annyeong Academy`, 
+    description: 'Learn Korean culture and language tips.',
+  }
+}
+
 "use client";
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { Skeleton } from '@/components/ui/Skeletons'
 import { useAuth } from '@/context/AuthContext'
-import Navbar from '@/components/sections/Navbar'
-import Footer from '@/components/sections/Footer'
-import { Loader2, ArrowLeft, Calendar, Send, MessageCircle } from 'lucide-react'
-import Link from 'next/link'
-import ShareButton from '@/components/ui/ShareButton'
 
 export default function BlogPost() {
   const { slug } = useParams()
@@ -47,14 +58,33 @@ export default function BlogPost() {
     setSubmitting(false)
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-brand-purple" /></div>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
+        <Navbar />
+        <main className="flex-grow pt-32 pb-20 px-4">
+          <div className="max-w-3xl mx-auto space-y-8">
+            <Skeleton className="h-96 w-full rounded-3xl" />
+            <div className="space-y-4">
+                <Skeleton className="h-10 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
   if (!post) return <div className="min-h-screen flex items-center justify-center">Post not found</div>
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F9FC]">
       <Navbar />
       <main className="flex-grow pt-32 pb-20 px-4">
-        <article className="max-w-3xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <article className="max-w-3xl mx-auto bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in">
           <div className="h-64 md:h-96 bg-gray-200">
             <img src={post.image_url || 'https://placehold.co/800x400'} alt={post.title} className="w-full h-full object-cover" />
           </div>

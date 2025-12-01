@@ -5,10 +5,11 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { usePayment } from '@/context/PaymentContext'
 import { useLanguage } from '@/context/LanguageContext'
-import { Video, Loader2, PlayCircle, ShoppingCart, Search, X, Star, Filter, User } from 'lucide-react'
+import { Video, Loader2, PlayCircle, ShoppingCart, Search, X, Star, Filter, User, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { cleanDescription } from '@/lib/helpers'
 import WishlistButton from '@/components/ui/WishlistButton'
+import { CourseCardSkeleton } from '@/components/ui/Skeletons'
 
 export default function Courses() {
   const { user } = useAuth()
@@ -21,12 +22,14 @@ export default function Courses() {
   const [purchasedIds, setPurchasedIds] = useState([])
   const [loading, setLoading] = useState(true)
   
-  // Filters
+  // Filters & Pagination
   const [searchTerm, setSearchTerm] = useState('')
   const [ownershipFilter, setOwnershipFilter] = useState('all')
   const [levelFilter, setLevelFilter] = useState('all')
   const [tutorFilter, setTutorFilter] = useState('all')
   const [sortOrder, setSortOrder] = useState('popular')
+  const [page, setPage] = useState(1)
+  const ITEMS_PER_PAGE = 6
 
   useEffect(() => {
     const levelParam = searchParams.get('level')
@@ -37,11 +40,9 @@ export default function Courses() {
 
   const fetchData = async () => {
     try {
-      // Fetch Products with Tutors
       const { data: prods } = await supabase.from('products').select('*, tutors(id, name)').eq('type', 'course')
       setCourses(prods || [])
       
-      // Fetch Tutors for Filter
       const { data: tuts } = await supabase.from('tutors').select('id, name')
       setTutors(tuts || [])
 
@@ -54,6 +55,7 @@ export default function Courses() {
 
   const getPriceVal = (p) => parseFloat(p.replace(/[^0-9.]/g, '') || 0)
 
+  // Client-side filtering because DB is small for demo. 
   const filteredCourses = courses
     .filter(course => {
       const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -72,10 +74,11 @@ export default function Courses() {
       if (sortOrder === 'price_asc') return getPriceVal(a.price) - getPriceVal(b.price)
       if (sortOrder === 'price_desc') return getPriceVal(b.price) - getPriceVal(a.price)
       if (sortOrder === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0)
-      return 0 // Default
+      return 0 
     })
 
-  if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-purple" /></div>
+  const totalPages = Math.ceil(filteredCourses.length / ITEMS_PER_PAGE)
+  const displayedCourses = filteredCourses.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 
   return (
     <div>
@@ -128,53 +131,81 @@ export default function Courses() {
         </select>
       </div>
 
-      {filteredCourses.length === 0 && (
+      {loading ? (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1,2,3,4,5,6].map(i => <CourseCardSkeleton key={i} />)}
+        </div>
+      ) : filteredCourses.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
           <p className="text-gray-500 font-medium">{t('course_no_results')}</p>
           <button onClick={() => {setSearchTerm(''); setLevelFilter('all'); setOwnershipFilter('all'); setTutorFilter('all')}} className="text-brand-purple font-bold mt-2 hover:underline">Clear Filters</button>
         </div>
-      )}
+      ) : (
+        <>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayedCourses.map(course => {
+              const isOwned = purchasedIds.includes(course.id)
+              return (
+                <div key={course.id} className={`bg-white rounded-2xl overflow-hidden border transition group flex flex-col relative ${isOwned ? 'border-green-200 shadow-sm' : 'border-gray-100 hover:shadow-md'}`}>
+                  <div className="h-48 overflow-hidden relative bg-gray-100">
+                    <img src={course.image_url || 'https://placehold.co/600x400/6a11cb/ffffff?text=Course'} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-brand-dark flex items-center gap-1">
+                      <Video size={12} className="text-blue-500" /> {course.level || 'All Levels'}
+                    </div>
+                    <div className="absolute top-4 left-4">
+                      <WishlistButton productId={course.id} />
+                    </div>
+                  </div>
+                  
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="mb-2">
+                      <h3 className="text-xl font-bold text-brand-dark line-clamp-1">{course.title}</h3>
+                      {course.tutors && <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><User size={12}/> {course.tutors.name}</p>}
+                    </div>
+                    <p className="text-sm text-gray-500 mb-4 line-clamp-2 flex-1">{cleanDescription(course.description)}</p>
+                    <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                      {isOwned ? (
+                        <Link href={`/corsi/${course.id}`} className="w-full bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition flex items-center justify-center gap-2">
+                          <PlayCircle size={16} /> {t('course_access')}
+                        </Link>
+                      ) : (
+                        <>
+                          <span className="text-2xl font-bold text-brand-purple">{course.price}</span>
+                          <button onClick={() => initiateCheckout(course)} className="bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition flex items-center gap-2">
+                            <ShoppingCart size={16}/> {t('course_enroll')}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCourses.map(course => {
-          const isOwned = purchasedIds.includes(course.id)
-          return (
-            <div key={course.id} className={`bg-white rounded-2xl overflow-hidden border transition group flex flex-col relative ${isOwned ? 'border-green-200 shadow-sm' : 'border-gray-100 hover:shadow-md'}`}>
-              <div className="h-48 overflow-hidden relative bg-gray-100">
-                <img src={course.image_url || 'https://placehold.co/600x400/6a11cb/ffffff?text=Course'} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-brand-dark flex items-center gap-1">
-                  <Video size={12} className="text-blue-500" /> {course.level || 'All Levels'}
-                </div>
-                <div className="absolute top-4 left-4">
-                  <WishlistButton productId={course.id} />
-                </div>
-              </div>
-              
-              <div className="p-6 flex-1 flex flex-col">
-                <div className="mb-2">
-                   <h3 className="text-xl font-bold text-brand-dark">{course.title}</h3>
-                   {course.tutors && <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><User size={12}/> {course.tutors.name}</p>}
-                </div>
-                <p className="text-sm text-gray-500 mb-4 line-clamp-2 flex-1">{cleanDescription(course.description)}</p>
-                <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-                  {isOwned ? (
-                     <Link href={`/corsi/${course.id}`} className="w-full bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition flex items-center justify-center gap-2">
-                       <PlayCircle size={16} /> {t('course_access')}
-                     </Link>
-                  ) : (
-                    <>
-                      <span className="text-2xl font-bold text-brand-purple">{course.price}</span>
-                      <button onClick={() => initiateCheckout(course)} className="bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition flex items-center gap-2">
-                        <ShoppingCart size={16}/> {t('course_enroll')}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-12">
+                <button 
+                    disabled={page === 1} 
+                    onClick={() => setPage(p => p - 1)} 
+                    className="p-3 bg-white border border-gray-200 rounded-full hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
+                >
+                    <ChevronLeft size={20} />
+                </button>
+                <span className="font-bold text-gray-600 text-sm">Page {page} of {totalPages}</span>
+                <button 
+                    disabled={page === totalPages} 
+                    onClick={() => setPage(p => p + 1)} 
+                    className="p-3 bg-white border border-gray-200 rounded-full hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm"
+                >
+                    <ChevronRight size={20} />
+                </button>
             </div>
-          )
-        })}
-      </div>
+          )}
+        </>
+      )}
+      
       <style jsx>{`
         .filter-select {
           @apply px-4 py-2 border border-gray-200 rounded-xl outline-none bg-white text-gray-600 text-sm font-bold focus:border-brand-purple cursor-pointer;

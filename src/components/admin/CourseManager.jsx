@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Loader2, Trash2, Edit, Video, HelpCircle, Plus, Calendar, Folder } from 'lucide-react'
+import { Loader2, Trash2, Edit, Video, HelpCircle, Plus, Folder, GripVertical, Save } from 'lucide-react'
 import SnippetHelper from './SnippetHelper'
 import FileUploader from './FileUploader'
 
@@ -12,6 +12,12 @@ export default function CourseManager() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   
+  // Drag & Drop State
+  const dragItem = useRef(null)
+  const dragOverItem = useRef(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [moduleGroups, setModuleGroups] = useState({})
+
   const [formData, setFormData] = useState({ 
     title: '', video_url: '', description: '', quiz_data: '', type: 'video', release_date: '', module: 'General', pdf_url: ''
   })
@@ -24,13 +30,24 @@ export default function CourseManager() {
     setCourses(c || [])
     if (c && c.length > 0 && !selectedCourse) setSelectedCourse(c[0].id)
     if (selectedCourse) {
-      const { data: l } = await supabase.from('lessons').select('*').eq('course_id', selectedCourse).order('created_at', { ascending: true })
+      const { data: l } = await supabase.from('lessons').select('*').eq('course_id', selectedCourse).order('position', { ascending: true })
       setLessons(l || [])
     }
     setLoading(false)
   }
 
   useEffect(() => { if(selectedCourse) fetchData() }, [selectedCourse])
+
+  // GROUPING LOGIC
+  useEffect(() => {
+    const grouped = lessons.reduce((acc, lesson) => {
+      const mod = lesson.module || 'General'
+      if (!acc[mod]) acc[mod] = []
+      acc[mod].push(lesson)
+      return acc
+    }, {})
+    setModuleGroups(grouped)
+  }, [lessons])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -42,6 +59,9 @@ export default function CourseManager() {
       try { parsedQuiz = JSON.parse(formData.quiz_data) } catch { alert("Invalid Quiz JSON"); setLoading(false); return; }
     }
 
+    // Determine position: End of list
+    const position = lessons.length
+
     const payload = { 
       course_id: selectedCourse, 
       title: formData.title, 
@@ -51,7 +71,8 @@ export default function CourseManager() {
       description: formData.description, 
       quiz_data: parsedQuiz,
       release_date: formData.release_date || new Date().toISOString(),
-      module: formData.module || 'General'
+      module: formData.module || 'General',
+      position: editing ? editing.position : position
     }
 
     if (editing) await supabase.from('lessons').update(payload).eq('id', editing.id)
@@ -85,12 +106,83 @@ export default function CourseManager() {
   const insertSnippet = (text) => setFormData(prev => ({ ...prev, description: prev.description + text }))
   const insertQuizTemplate = (json) => setFormData(prev => ({ ...prev, quiz_data: json }))
 
-  const groupedLessons = lessons.reduce((acc, lesson) => {
-    const mod = lesson.module || 'General'
-    if (!acc[mod]) acc[mod] = []
-    acc[mod].push(lesson)
-    return acc
-  }, {})
+  // DRAG AND DROP HANDLERS
+  const onDragStart = (e, index, moduleName) => {
+    dragItem.current = { index, module: moduleName }
+    setIsDragging(true)
+  }
+
+  const onDragEnter = (e, index, moduleName) => {
+    dragOverItem.current = { index, module: moduleName }
+  }
+
+  const onDragEnd = async () => {
+    if (!dragItem.current || !dragOverItem.current) {
+        setIsDragging(false)
+        return
+    }
+
+    const srcMod = dragItem.current.module
+    const destMod = dragOverItem.current.module
+    
+    // Convert Grouped structure to Flat List, perform swap, then re-group.
+    const newGroups = { ...moduleGroups }
+    newGroups[srcMod] = [...newGroups[srcMod]] // Copy
+    const itemToMove = newGroups[srcMod].splice(dragItem.current.index, 1)[0] // Remove
+    
+    // Update module if changed
+    if (srcMod !== destMod) {
+        itemToMove.module = destMod
+    }
+    
+    if(!newGroups[destMod]) newGroups[destMod] = []
+    const targetGroup = srcMod === destMod ? newGroups[srcMod] : [...newGroups[destMod]]
+    
+    if(srcMod !== destMod) newGroups[destMod] = targetGroup
+    
+    targetGroup.splice(dragOverItem.current.index, 0, itemToMove)
+    
+    setModuleGroups(newGroups)
+    setIsDragging(false)
+    dragItem.current = null
+    dragOverItem.current = null
+  }
+
+  const saveOrder = async () => {
+    setLoading(true)
+    // Flatten groups to array with updated indices
+    let flatList = []
+    Object.keys(moduleGroups).forEach(mod => {
+        const items = moduleGroups[mod]
+        items.forEach((item, idx) => {
+            flatList.push({ ...item, module: mod, position: flatList.length })
+        })
+    })
+
+    // Batch update
+    const updates = flatList.map(l => ({
+        id: l.id,
+        course_id: l.course_id,
+        title: l.title,
+        module: l.module,
+        position: l.position
+    }))
+
+    const { error } = await supabase.from('lessons').upsert(updates, { onConflict: 'id' })
+    if(error) alert("Error saving order: " + error.message)
+    else alert("Order saved!")
+    
+    fetchData() // Refresh
+  }
+
+  const interactiveQuizExample = JSON.stringify([
+    {
+      "timestamp": 10,
+      "question": "What phrase was just used?",
+      "options": ["Hello", "Goodbye"],
+      "correct": 0
+    }
+  ], null, 2);
 
   return (
     <div className="grid lg:grid-cols-3 gap-8">
@@ -107,7 +199,7 @@ export default function CourseManager() {
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Module</label>
             <input list="modules" className="input-field" value={formData.module} onChange={e => setFormData({...formData, module: e.target.value})} placeholder="e.g. Introduction" />
-            <datalist id="modules">{Object.keys(groupedLessons).map(m => <option key={m} value={m} />)}</datalist>
+            <datalist id="modules">{Object.keys(moduleGroups).map(m => <option key={m} value={m} />)}</datalist>
           </div>
           <input required placeholder="Lesson Title" className="input-field" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
           <div className="grid grid-cols-2 gap-2">
@@ -133,6 +225,11 @@ export default function CourseManager() {
           
           <div>
              <SnippetHelper onInsert={insertSnippet} onInsertQuiz={insertQuizTemplate} />
+             <div className="flex gap-2 mb-2">
+                <button type="button" onClick={() => insertQuizTemplate(interactiveQuizExample)} className="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-full border border-orange-200 hover:bg-orange-200">
+                    + Interactive Video Quiz
+                </button>
+             </div>
              <textarea placeholder="Description / Vocabulary" className="input-field h-24" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
           </div>
           
@@ -146,13 +243,29 @@ export default function CourseManager() {
       </div>
 
       <div className="lg:col-span-2 space-y-6">
-        {Object.entries(groupedLessons).map(([moduleName, moduleLessons]) => (
+        <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-brand-dark">Curriculum Builder</h2>
+            <button onClick={saveOrder} disabled={loading} className="btn bg-green-600 hover:bg-green-700 px-4 py-2 text-sm flex items-center gap-2 shadow-sm">
+               {loading ? <Loader2 className="animate-spin" size={16}/> : <Save size={16}/>} Save Order
+            </button>
+        </div>
+
+        {Object.entries(moduleGroups).map(([moduleName, moduleLessons]) => (
           <div key={moduleName} className="bg-white p-4 rounded-2xl border border-gray-100">
-            <h4 className="font-bold text-brand-dark flex items-center gap-2 mb-4 px-2"><Folder size={18} className="text-brand-purple"/> {moduleName}</h4>
+            <h4 className="font-bold text-brand-dark flex items-center gap-2 mb-4 px-2 bg-gray-50 p-2 rounded-lg"><Folder size={18} className="text-brand-purple"/> {moduleName}</h4>
             <div className="space-y-2">
-              {moduleLessons.map(l => (
-                <div key={l.id} className="bg-gray-50 p-3 rounded-xl flex gap-4 items-center group hover:bg-white hover:shadow-sm transition border border-transparent hover:border-gray-100">
-                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-brand-purple shrink-0 shadow-sm">{l.type === 'audio' ? <Plus size={16}/> : <Video size={16}/>}</div>
+              {moduleLessons.map((l, index) => (
+                <div 
+                    key={l.id} 
+                    draggable
+                    onDragStart={(e) => onDragStart(e, index, moduleName)}
+                    onDragEnter={(e) => onDragEnter(e, index, moduleName)}
+                    onDragEnd={onDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
+                    className="bg-white p-3 rounded-xl flex gap-4 items-center group hover:shadow-md transition border border-gray-200 cursor-move active:bg-purple-50 active:border-brand-purple"
+                >
+                  <GripVertical size={20} className="text-gray-300"/>
+                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-brand-purple shrink-0 shadow-sm">{l.type === 'audio' ? <Plus size={16}/> : <Video size={16}/>}</div>
                   <div className="flex-1">
                     <h5 className="font-bold text-gray-700 text-sm">{l.title}</h5>
                     <div className="flex gap-2 mt-1 text-[10px]">
